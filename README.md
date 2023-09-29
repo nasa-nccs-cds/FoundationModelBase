@@ -1,32 +1,18 @@
----
-title: ILAB TEMPLATE - Data Science
-purpose: Template for python projects tailored to scientific applications (e.g., machine learning)
----
 
-# ilab-template-python-data-science
+# Foundation Model Base
 
-Template for python projects tailored to scientific applications (e.g., machine learning)
+Framework for feeding data from various sources to FoundationModel/DigitalTwin training and inference processes.
 
 ## Objectives
 
-- Establish common structure for similar ILAB projects
+- Establish common structure for various FoundationModel/DigitalTwin projects.
+- Create generic data access and formating routines for use across projects
 
-## Containers
+## Conda Environment
 
-### TBD 
+    > conda create -n fmbase -c conda-forge 
+    > conda activate fmbase
+    > conda install -c conda-forge pydap numpy xarray dask matplotlib netcdf4
+    > pip install hydra-core --upgrade
 
-## Quickstart
 
-### TBD
-
-## Dataset Generation and Training
-
-### TBD
-
-## Full Data Pipeline Command
-
-### TBD
-
-## Contributors
-
-### TBD

@@ -1,2 +1,9 @@
 python
 omegaconf
+pydap
+numpy
+xarray
+dask
+matplotlib
+netcdf4
+hydra-core
