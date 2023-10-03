@@ -1,0 +1,4 @@
+defaults:
+  - platform: explore
+  - scenario: conus8
+  - learning: demo1

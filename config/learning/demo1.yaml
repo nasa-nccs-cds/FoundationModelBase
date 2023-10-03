@@ -1,0 +1,13 @@
+type: maxent
+hidden_layer_sizes: [ 64, 32, 8 ] # List bottom->top
+l1_strength:   [ 1e-4, 1e-4, 0.0, 0.0 ]
+learning_rate: 5e-4
+nepochs: 100
+train_yearly: False
+bias: True
+losstype: "full"
+norm: "logistic"
+metrics_step: 5
+
+
+
