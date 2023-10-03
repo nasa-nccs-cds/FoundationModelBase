@@ -39,12 +39,12 @@ def xrng( v: xa.DataArray ):
 def srng( v: xa.DataArray ):
     return f"[{xmin(v):.5f}, {xmax(v):.5f}]"
 
-class CovariateDataProcessor:
+class MERRADataProcessor:
 
     def __init__(self):
         self.xext, self.yext = cfg().scenario.get('xext'), cfg().scenario.get('yext')
         self.xres, self.yres = cfg().scenario.get('xres'), cfg().scenario.get('yres')
-        self.xcDset, self.ycDset = cfg().covariates.xcoord, cfg().covariates.ycoord
+        self.xcDset, self.ycDset = cfg().dvariates.xcoord, cfg().dvariates.ycoord
         self.year_range = cfg().scenario.year_range
         self.month_range = cfg().scenario.get('month_range',[0,12,1])
         self.file_template = cfg().platform.cov_files
@@ -78,7 +78,7 @@ class CovariateDataProcessor:
                 dset_template = self.file_template.format(collection=collection, year=year, month=month)
                 dset_paths = f"{self.data_dir}/{dset_template}"
                 dset_files.extend( glob.glob(dset_paths) )
-        if len(dset_files) == 0: print( f"Unable to find any covariate data for glob: {dset_paths}" )
+        if len(dset_files) == 0: print( f"Unable to find any dvariate data for glob: {dset_paths}" )
         return dset_files
 
     @classmethod
@@ -124,18 +124,18 @@ class CovariateDataProcessor:
         for year in years:
             t0 = time.time()
             dset_files = self.get_yearly_files( collection, year )
-            covars: List[str] = self.get_covnames( dset_files[0] )
-            if len( covars ) == 0:
-                print(f" ** No covariates in this collection")
+            dvars: List[str] = self.get_varnames( dset_files[0] )
+            if len( dvars ) == 0:
+                print(f" ** No dvars in this collection")
                 return
-            if not reprocess and self.cache_files_exist( covars, year ):
+            if not reprocess and self.cache_files_exist( dvars, year ):
                 print(f" ** Skipping already processed year {year}")
             else:
-                print(f" ** Loading dataset files for covariates {covars}, year={year}")
+                print(f" ** Loading dataset files for dvars {dvars}, year={year}")
                 agg_dataset: xa.Dataset =  self.open_collection( collection, dset_files, year=year )
                 print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
-                for covar in covars:
-                    self.proccess_variable( covar, agg_dataset, **kwargs )
+                for dvar in dvars:
+                    self.proccess_variable( dvar, agg_dataset, **kwargs )
                 agg_dataset.close()
 
     def cache_files_exist(self, varnames: List[str], year: int ) -> bool:
@@ -145,23 +145,23 @@ class CovariateDataProcessor:
         return True
 
     @classmethod
-    def get_covnames(cls, dset_file: str ) -> List[str]:
+    def get_varnames(cls, dset_file: str) -> List[str]:
         dset: xa.Dataset = xa.open_dataset(dset_file)
         covnames = [vname for vname in dset.data_vars.keys() if vname in cfg().scenario.vars]
         dset.close()
         return covnames
 
     @classmethod
-    def get_covariates(cls, dset: xa.Dataset ) -> Dict[str,xa.DataArray]:
-        covariates: Dict[str,xa.DataArray] = { vid: dvar for vid, dvar in dset.data_vars.items() if vid in cfg().scenario.vars }
-        return { vid: dvar.where(dvar != dvar.attrs['fmissing_value'], np.nan) for vid, dvar in covariates.items()}
+    def get_dvariates(cls, dset: xa.Dataset ) -> Dict[str,xa.DataArray]:
+        dvariates: Dict[str,xa.DataArray] = { vid: dvar for vid, dvar in dset.data_vars.items() if vid in cfg().scenario.vars }
+        return { vid: dvar.where(dvar != dvar.attrs['fmissing_value'], np.nan) for vid, dvar in dvariates.items()}
 
     def open_collection(self, collection, files: List[str], **kwargs) -> xa.Dataset:
         print( f" -----> open_collection[{collection}:{kwargs['year']}]>> {len(files)} files, Compute yearly averages: ", end="")
         t0 = time.time()
         dset: xa.Dataset = xa.open_mfdataset(files)
         dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-        resampled_dset = xa.Dataset( self.get_covariates( dset ), dset.coords ).resample(time='AS').mean('time')
+        resampled_dset = xa.Dataset( self.get_dvariates( dset ), dset.coords ).resample(time='AS').mean('time')
         resampled_dset.attrs.update(dset_attrs)
         print( f" Loaded {len(resampled_dset.data_vars)} vars in time = {time.time()-t0:.2f} sec")
         for vid, dvar in resampled_dset.data_vars.items(): dvar.attrs.update( dset.data_vars[vid].attrs )
@@ -197,7 +197,7 @@ class CovariateDataProcessor:
 
     def create_cache_dset(self, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
         t0 = time.time()
-        year, cname = dset_attrs['year'], "covariate"
+        year, cname = dset_attrs['year'], "dvariate"
         ccords = { 'time': vdata.coords['time'], self.xcCache: vdata.coords[self.xcDset], self.ycCache: vdata.coords[self.ycDset] }
         global_attrs = dict( **dset_attrs )
         global_attrs.update( varname=vdata.name, year=year )
