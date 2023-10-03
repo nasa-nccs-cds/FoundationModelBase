@@ -6,7 +6,7 @@ def cfg() -> DictConfig:
     return Configuration.instance().cfg
 
 def configure(config_name: str, config_path=None):
-    if config_path is None: config_path =  "../../conf"
+    if config_path is None: config_path =  "../../config"
     Configuration.init( config_name, config_path )
 
 class Configuration:
