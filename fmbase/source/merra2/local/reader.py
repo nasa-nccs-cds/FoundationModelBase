@@ -77,7 +77,9 @@ class MERRADataProcessor:
             for month in months:
                 dset_template = self.file_template.format(collection=collection, year=year, month=month+1)
                 dset_paths = f"{self.data_dir}/{dset_template}"
-                dset_files.extend( glob.glob(dset_paths) )
+                gfiles = glob.glob(dset_paths)
+                print( f" ** Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
+                dset_files.extend( gfiles )
         if len(dset_files) == 0: print( f"Unable to find any variable data for glob: {dset_paths}" )
         return dset_files
 
