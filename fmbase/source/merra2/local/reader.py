@@ -200,14 +200,18 @@ class MERRADataProcessor:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
 
     def create_cache_dset(self, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
+        print(f" create_cache_dset, dset_attrs = {dset_attrs} " )
         t0 = time.time()
-        year, cname = dset_attrs['year'], "dvariate"
+        year, cname = dset_attrs['year'], "variable"
         ccords = { 'time': vdata.coords['time'], self.xcCache: vdata.coords[self.xcDset], self.ycCache: vdata.coords[self.ycDset] }
+        dims = ['time',self.ycCache,self.xcCache]
         global_attrs = dict( **dset_attrs )
         global_attrs.update( varname=vdata.name, year=year )
+        scoords = { k:v.shape for (k,v) in ccords.keys() }
         t1 = time.time()
-        data_array = xa.DataArray( vdata.values, ccords, ['time',self.ycCache,self.xcCache], attrs=vdata.attrs, name=cname )
-        print( f" ** ** ** >> Created cache dataset, shape={vdata.shape}: time = {t1-t0:.2f} {time.time()-t1:.2f} sec, vrange = {[vrange(vdata)]}")
+        print(f" ** ** ** >> Cache dataset: shape={vdata.shape}, dims={dims}, coords={scoords}, attrs={vdata.attrs}")
+        data_array = xa.DataArray( vdata.values, ccords, dims, attrs=vdata.attrs, name=cname )
+        print( f" ** ** ** >> Created dataset: time = {t1-t0:.2f} {time.time()-t1:.2f} sec, vrange = {[vrange(vdata)]}")
         global_attrs['RangeStartingDate'] =  f"{year-1}-12-31"
         global_attrs['RangeStartingTime']  = "23:30:00.000000"
         global_attrs['RangeEndingDate'] =  f"{year}-12-31"
