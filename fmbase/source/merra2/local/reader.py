@@ -71,6 +71,7 @@ class MERRADataProcessor:
         dset_paths = f"{self.data_dir}/{dset_template}"
         if len(months) == 12:
             dset_files = glob.glob(dset_paths)
+            print(f" ** Found {len(dset_files)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}")
         else:
             dset_files = []
             assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
@@ -78,7 +79,7 @@ class MERRADataProcessor:
                 dset_template = self.file_template.format(collection=collection, year=year, month=month+1)
                 dset_paths = f"{self.data_dir}/{dset_template}"
                 gfiles = glob.glob(dset_paths)
-                print( f" ** Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
+                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
                 dset_files.extend( gfiles )
         if len(dset_files) == 0: print( f"Unable to find any variable data for glob: {dset_paths}" )
         return dset_files
