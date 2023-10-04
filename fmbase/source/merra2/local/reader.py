@@ -67,7 +67,7 @@ class MERRADataProcessor:
     def get_yearly_files(self, collection, year) -> List[str]:
         months = list(range(*self.month_range))
         assert "{year}" in self.file_template, "{year} field missing from platform.cov_files parameter"
-        dset_template = self.file_template.format(collection=collection, year=year, month=0).replace("00*", "*")
+        dset_template = self.file_template.format(collection=collection, year=year, month="*")
         dset_paths = f"{self.data_dir}/{dset_template}"
         if len(months) == 12:
             dset_files = glob.glob(dset_paths)
@@ -76,7 +76,7 @@ class MERRADataProcessor:
             dset_files = []
             assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
             for month in months:
-                dset_template = self.file_template.format(collection=collection, year=year, month=month+1)
+                dset_template = self.file_template.format(collection=collection, year=year, month=f"{month+1:0>2}")
                 dset_paths = f"{self.data_dir}/{dset_template}"
                 gfiles = glob.glob(dset_paths)
                 print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
