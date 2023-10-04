@@ -58,11 +58,11 @@ class MERRADataProcessor:
 
     @property
     def data_dir(self):
-        return cfg().platform.dataset_root.format( sparrow=cfg().platform.root )
+        return cfg().platform.dataset_root.format( root=cfg().platform.root )
 
     @property
     def cache_dir(self):
-        return cfg().platform.cache.format( sparrow=cfg().platform.root )
+        return cfg().platform.cache.format( root=cfg().platform.root )
 
     def get_yearly_files(self, collection, year) -> List[str]:
         months = list(range(*self.month_range))
