@@ -44,7 +44,7 @@ class MERRADataProcessor:
     def __init__(self):
         self.xext, self.yext = cfg().scenario.get('xext'), cfg().scenario.get('yext')
         self.xres, self.yres = cfg().scenario.get('xres'), cfg().scenario.get('yres')
-        self.xcDset, self.ycDset = cfg().dvariates.xcoord, cfg().dvariates.ycoord
+        self.xcDset, self.ycDset = cfg().scenario.xcoord, cfg().scenario.ycoord
         self.year_range = cfg().scenario.year_range
         self.month_range = cfg().scenario.get('month_range',[0,12,1])
         self.file_template = cfg().platform.cov_files

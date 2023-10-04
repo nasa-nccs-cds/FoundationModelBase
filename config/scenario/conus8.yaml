@@ -8,4 +8,6 @@ yres: 0.1
 xc: lon
 yc: lat
 vars: [ QV ]
+xcoord: lon
+ycoord: lat
 levels: [ 1000, 900, 800, 700 ]
