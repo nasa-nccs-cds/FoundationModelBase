@@ -207,7 +207,7 @@ class MERRADataProcessor:
         dims = ['time',self.ycCache,self.xcCache]
         global_attrs = dict( **dset_attrs )
         global_attrs.update( varname=vdata.name, year=year )
-        scoords = { k:v.shape for (k,v) in ccords.keys() }
+        scoords = { k:v.shape for (k,v) in ccords.items() }
         t1 = time.time()
         print(f" ** ** ** >> Cache dataset: shape={vdata.shape}, dims={dims}, coords={scoords}, attrs={vdata.attrs}")
         data_array = xa.DataArray( vdata.values, ccords, dims, attrs=vdata.attrs, name=cname )
