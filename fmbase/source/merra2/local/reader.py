@@ -187,11 +187,12 @@ class MERRADataProcessor:
         t0 = time.time()
         reprocess = kwargs.get('reprocess',False)
         variable: xa.DataArray = agg_dataset.data_vars[varname]
-        interp_var = self.resample_variable(variable)
+        interp_var: xa.DataArray = self.resample_variable(variable)
         filepath = self.variable_cache_filepath( varname, agg_dataset.attrs['year'] )
         if reprocess or not os.path.exists(filepath):
-            print(f" ** ** ** Processing variable {variable.name}, file= {filepath} ")
+            print(f" ** ** ** Processing variable {variable.name}, shape= {interp_var.shape}, dims= {interp_var.dims}, file= {filepath}")
             dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
+            print(f" -> Created cache dataset" )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
             dset.to_netcdf(filepath)
             print(f" ** ** ** >> Writing cache data file: {filepath}, time= {time.time()-t0} sec.")
