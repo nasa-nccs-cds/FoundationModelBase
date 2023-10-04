@@ -47,7 +47,7 @@ class MERRADataProcessor:
         self.xcDset, self.ycDset = cfg().scenario.xcoord, cfg().scenario.ycoord
         self.year_range = cfg().scenario.year_range
         self.month_range = cfg().scenario.get('month_range',[0,12,1])
-        self.file_template = cfg().platform.cov_files
+        self.file_template = cfg().platform.dataset_files
         self.cache_file_template = cfg().scenario.cache_file_template
         self.cfgId = cfg().scenario.id
         self.xcCache, self.ycCache = cfg().scenario.xc, cfg().scenario.yc
