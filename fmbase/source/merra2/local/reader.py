@@ -50,11 +50,12 @@ class MERRADataProcessor:
         self.file_template = cfg().platform.dataset_files
         self.cache_file_template = cfg().scenario.cache_file_template
         self.cfgId = cfg().scenario.id
-        if (self.yext is None) or (self.yres is None):
-            self.yci, self.xci = None, None
-        else:
-            self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
-            self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
+
+        # if (self.yext is None) or (self.yres is None):
+        #     self.yci, self.xci = None, None
+        # else:
+        #     self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
+        #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
 
     @property
     def data_dir(self):
@@ -170,11 +171,31 @@ class MERRADataProcessor:
         for vid, dvar in resampled_dset.data_vars.items(): dvar.attrs.update( dset.data_vars[vid].attrs )
         return resampled_dset
 
+    # if (self.yext is None) or (self.yres is None):
+    #     self.yci, self.xci = None, None
+    # else:
+    #     self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
+    #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
+
     def resample_variable(self, variable: xa.DataArray) -> xa.DataArray:
-        scoords = {self.xcDset: slice(self.xext[0], self.xext[1]), self.ycDset: slice(self.yext[0], self.yext[1])}
-        newvar: xa.DataArray = variable.sel(**scoords)
-        newvar.attrs.update( variable.attrs )
-        xc, yc = newvar.coords[self.xcDset].values, newvar.coords[self.ycDset].values
+        if self.yres is not None:
+            xc0, yc0 = variable.coords['x'].values,  variable.coords['y'].values
+            if self.yext is  None:
+                self.xext = [ xc0[0], xc0[-1] ]
+                self.yext = [ yc0[0], yc0[-1] ]
+            xc1, yc1 = range(self.xext[0],self.xext[1],self.xres), range(self.yext[0],self.yext[1],self.yres)
+            newvar: xa.DataArray = variable.interp( x=xc1, y=yc1, assume_sorted=True )
+            newvar.attrs.update(variable.attrs)
+            print( f"xc0[{xc0.size}] = {xc0.tolist()}")
+            print( f"xres = {self.xres}")
+            print( f"xc1[{len(xc1)}] = {xc1}")
+        elif self.yext is not None:
+            scoords = {'x': slice(self.xext[0], self.xext[1]), 'y': slice(self.yext[0], self.yext[1])}
+            newvar: xa.DataArray = variable.sel(**scoords)
+            newvar.attrs.update(variable.attrs)
+        else:
+            newvar: xa.DataArray = variable
+        xc, yc = newvar.coords['x'].values, newvar.coords['y'].values
         newvar.attrs['xres'], newvar.attrs['yres'] = (xc[1]-xc[0]).tolist(), (yc[1]-yc[0]).tolist()
         newvar.attrs['fmissing_value'] = np.nan
         return newvar
