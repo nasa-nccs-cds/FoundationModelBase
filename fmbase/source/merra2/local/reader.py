@@ -200,7 +200,7 @@ class MERRADataProcessor:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
 
     def create_cache_dset(self, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
-        print(f" create_cache_dset, dset_attrs = {dset_attrs} " )
+        print(f" create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, dset_attrs = {dset_attrs} " )
         t0 = time.time()
         year, cname = dset_attrs['year'], "variable"
         ccords = { 'time': vdata.coords['time'], self.xcCache: vdata.coords[self.xcDset], self.ycCache: vdata.coords[self.ycDset] }
