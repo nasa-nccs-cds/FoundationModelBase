@@ -44,13 +44,12 @@ class MERRADataProcessor:
     def __init__(self):
         self.xext, self.yext = cfg().scenario.get('xext'), cfg().scenario.get('yext')
         self.xres, self.yres = cfg().scenario.get('xres'), cfg().scenario.get('yres')
-        self.xcDset, self.ycDset = cfg().scenario.xcoord, cfg().scenario.ycoord
+        self.dmap = cfg().scenario.dims
         self.year_range = cfg().scenario.year_range
         self.month_range = cfg().scenario.get('month_range',[0,12,1])
         self.file_template = cfg().platform.dataset_files
         self.cache_file_template = cfg().scenario.cache_file_template
         self.cfgId = cfg().scenario.id
-        self.xcCache, self.ycCache = cfg().scenario.xc, cfg().scenario.yc
         if self.yext is None: self.yext, self.xci = None, None
         else:
             self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
@@ -203,8 +202,8 @@ class MERRADataProcessor:
         print(f" create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, dset_attrs = {dset_attrs} " )
         t0 = time.time()
         year, cname = dset_attrs['year'], "variable"
-        ccords = { 'time': vdata.coords['time'], self.xcCache: vdata.coords[self.xcDset], self.ycCache: vdata.coords[self.ycDset] }
-        dims = ['time',self.ycCache,self.xcCache]
+        dims = [ self.dmap[d] for d in vdata.dims ]
+        ccords = { self.dmap[d]: vdata.coords[d] for d in vdata.dims }
         global_attrs = dict( **dset_attrs )
         global_attrs.update( varname=vdata.name, year=year )
         scoords = { k:v.shape for (k,v) in ccords.items() }

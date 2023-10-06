@@ -3,11 +3,6 @@ cache_file_template: "{varname}_ave_{year}.nc"
 year_range: [2000,2001,1]
 xext: [-130, -60]
 yext: [15, 55]
-xres: 0.1
-yres: 0.1
-xc: lon
-yc: lat
+dims: { lon: x, lat: y, lev: z, time: t }
 vars: [ QV ]
-xcoord: lon
-ycoord: lat
 levels: [ 1000, 900, 800, 700 ]
