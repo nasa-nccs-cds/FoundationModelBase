@@ -50,7 +50,8 @@ class MERRADataProcessor:
         self.file_template = cfg().platform.dataset_files
         self.cache_file_template = cfg().scenario.cache_file_template
         self.cfgId = cfg().scenario.id
-        if self.yext is None: self.yext, self.xci = None, None
+        if (self.yext is None) or (self.yres is None):
+            self.yci, self.xci = None, None
         else:
             self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
             self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
