@@ -16,6 +16,9 @@ def is_float( string: str ) -> bool:
     try: float(string); return True
     except ValueError:  return False
 
+def find_key( d: Dict, v: str ) -> str:
+    return list(d.keys())[ list(d.values()).index(v) ]
+
 def is_int( string: str ) -> bool:
     try: int(string);  return True
     except ValueError: return False
@@ -44,18 +47,13 @@ class MERRADataProcessor:
     def __init__(self):
         self.xext, self.yext = cfg().scenario.get('xext'), cfg().scenario.get('yext')
         self.xres, self.yres = cfg().scenario.get('xres'), cfg().scenario.get('yres')
-        self.dmap = cfg().scenario.dims
+        self.levels = cfg().scenario.get('levels')
+        self.dmap: Dict = cfg().scenario.dims
         self.year_range = cfg().scenario.year_range
         self.month_range = cfg().scenario.get('month_range',[0,12,1])
         self.file_template = cfg().platform.dataset_files
         self.cache_file_template = cfg().scenario.cache_file_template
         self.cfgId = cfg().scenario.id
-
-        # if (self.yext is None) or (self.yres is None):
-        #     self.yci, self.xci = None, None
-        # else:
-        #     self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
-        #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
 
     @property
     def data_dir(self):
@@ -178,23 +176,26 @@ class MERRADataProcessor:
     #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
 
     def resample_variable(self, variable: xa.DataArray) -> xa.DataArray:
+        dvar: xa.DataArray =  variable.rename( self.dmap )
         if self.yres is not None:
-            xc0, yc0 = variable.coords['x'].values,  variable.coords['y'].values
+            xc0, yc0 = dvar.coords['x'].values,  dvar.coords['y'].values
             if self.yext is  None:
                 self.xext = [ xc0[0], xc0[-1] ]
                 self.yext = [ yc0[0], yc0[-1] ]
             xc1, yc1 = range(self.xext[0],self.xext[1],self.xres), range(self.yext[0],self.yext[1],self.yres)
-            newvar: xa.DataArray = variable.interp( x=xc1, y=yc1, assume_sorted=True )
-            newvar.attrs.update(variable.attrs)
+            new_coords = dict( x=xc1, y=yc1 )
+            if self.levels is not None: new_coords['z'] = self.levels
+            newvar: xa.DataArray = dvar.interp( **new_coords, assume_sorted=True)
+            newvar.attrs.update(dvar.attrs)
             print( f"xc0[{xc0.size}] = {xc0.tolist()}")
             print( f"xres = {self.xres}")
             print( f"xc1[{len(xc1)}] = {xc1}")
         elif self.yext is not None:
             scoords = {'x': slice(self.xext[0], self.xext[1]), 'y': slice(self.yext[0], self.yext[1])}
-            newvar: xa.DataArray = variable.sel(**scoords)
-            newvar.attrs.update(variable.attrs)
+            newvar: xa.DataArray = dvar.sel(**scoords)
+            newvar.attrs.update(dvar.attrs)
         else:
-            newvar: xa.DataArray = variable
+            newvar: xa.DataArray = dvar
         xc, yc = newvar.coords['x'].values, newvar.coords['y'].values
         newvar.attrs['xres'], newvar.attrs['yres'] = (xc[1]-xc[0]).tolist(), (yc[1]-yc[0]).tolist()
         newvar.attrs['fmissing_value'] = np.nan
@@ -220,21 +221,14 @@ class MERRADataProcessor:
         else:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
 
-    def create_cache_dset(self, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
+    @classmethod
+    def create_cache_dset( cls, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
         print(f" create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, dset_attrs = {dset_attrs} " )
-        t0 = time.time()
-        year, cname = dset_attrs['year'], "variable"
-        dims = [ self.dmap[d] for d in vdata.dims ]
-        ccords = { self.dmap[d]: vdata.coords[d] for d in vdata.dims }
+        year = dset_attrs['year']
         global_attrs = dict( **dset_attrs )
         global_attrs.update( varname=vdata.name, year=year )
-        scoords = { k:v.shape for (k,v) in ccords.items() }
-        t1 = time.time()
-        print(f" ** ** ** >> Cache dataset: shape={vdata.shape}, dims={dims}, coords={scoords}, attrs={vdata.attrs}")
-        data_array = xa.DataArray( vdata.values, ccords, dims, attrs=vdata.attrs, name=cname )
-        print( f" ** ** ** >> Created dataset: time = {t1-t0:.2f} {time.time()-t1:.2f} sec, vrange = {[vrange(vdata)]}")
         global_attrs['RangeStartingDate'] =  f"{year-1}-12-31"
         global_attrs['RangeStartingTime']  = "23:30:00.000000"
         global_attrs['RangeEndingDate'] =  f"{year}-12-31"
         global_attrs['RangeEndingTime']  = "23:30:00.000000"
-        return xa.Dataset( {cname: data_array}, ccords, global_attrs )
+        return xa.Dataset( {vdata.name: vdata}, global_attrs )

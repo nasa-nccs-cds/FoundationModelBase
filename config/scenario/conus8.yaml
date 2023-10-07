@@ -1,8 +1,8 @@
 id: conus8
 cache_file_template: "{varname}_ave_{year}.nc"
 year_range: [2000,2001,1]
-xext: [-130, -60]
-yext: [15, 55]
+xres: 2.0
+yres: 2.0
 dims: { lon: x, lat: y, lev: z, time: t }
 vars: [ QV ]
 levels: [ 1000, 900, 800, 700 ]
