@@ -176,7 +176,8 @@ class MERRADataProcessor:
     #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
 
     def resample_variable(self, variable: xa.DataArray) -> xa.DataArray:
-        dvar: xa.DataArray =  variable.rename( self.dmap )
+        print( f"Rename, coords: {list(variable.coords.keys())}, map: {self.dmap}")
+        dvar: xa.DataArray =  variable.rename( **self.dmap )
         if self.yres is not None:
             xc0, yc0 = dvar.coords['x'].values,  dvar.coords['y'].values
             if self.yext is  None:
