@@ -1,6 +1,7 @@
 id: conus8
 cache_file_template: "{varname}_ave_{year}-{month}.nc"
 year_range: [2022,2023,1]
+month_range: [0,4,1]
 xext: [-130, -60]
 yext: [15, 55]
 dims: { lon: x, lat: y, lev: z }

@@ -63,11 +63,9 @@ class MERRADataProcessor:
     def cache_dir(self):
         return cfg().platform.cache.format( root=cfg().platform.root )
 
-    def get_monthly_files(self, collection, year) -> Dict[int,str]:
+    def get_monthly_files(self, collection, year) -> Dict[int,List[str]]:
         months = list(range(*self.month_range))
         assert "{year}" in self.file_template, "{year} field missing from platform.cov_files parameter"
-        dset_template = self.file_template.format(collection=collection, year=year, month="*")
-        dset_paths = f"{self.data_dir}/{dset_template}"
         dset_files = {}
         assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
         for month in months:
@@ -76,7 +74,6 @@ class MERRADataProcessor:
             gfiles = glob.glob(dset_paths)
             print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
             dset_files[month] = gfiles
-        if len(dset_files) == 0: print( f"Unable to find any variable data for glob: {dset_paths}" )
         return dset_files
 
     @classmethod
@@ -156,7 +153,7 @@ class MERRADataProcessor:
         return { vid: dvar.where(dvar != dvar.attrs['fmissing_value'], np.nan) for vid, dvar in dvariates.items()}
 
     def open_collection(self, collection, files: List[str], **kwargs) -> xa.Dataset:
-        print( f" -----> open_collection[{collection}:{kwargs['year']}]>> {len(files)} files, Compute yearly averages: ", end="")
+        print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
         tave =  kwargs.get( 'tave', False )
         t0 = time.time()
         dset: xa.Dataset = xa.open_mfdataset(files)
@@ -164,8 +161,10 @@ class MERRADataProcessor:
         sampled_dset = xa.Dataset( self.get_dvariates( dset ), dset.coords )
         if tave: sampled_dset = sampled_dset.resample(time='AS').mean('time')
         sampled_dset.attrs.update(dset_attrs)
-        print( f" Loaded {len(sampled_dset.data_vars)} vars in time = {time.time()-t0:.2f} sec")
-        for vid, dvar in sampled_dset.data_vars.items(): dvar.attrs.update( dset.data_vars[vid].attrs )
+        print( f" Loaded {len(sampled_dset.data_vars)} in time = {time.time()-t0:.2f} sec, VARS:")
+        for vid, dvar in sampled_dset.data_vars.items():
+            dvar.attrs.update( dset.data_vars[vid].attrs )
+            print( f" ** {vid}: {dvar.shape}")
         return sampled_dset
 
     # if (self.yext is None) or (self.yres is None):
