@@ -97,21 +97,6 @@ class MERRADataProcessor:
         header['yres'] = cs
         return xa.DataArray( raster_data, name=varname, dims=['lat','lon'], coords=dict(lat=yc,lon=xc), attrs=header )
 
-    def process_merramax(self):
-        years = list(range(*self.year_range))
-        for year in years:
-            dset_template = self.file_template.format(year=year)
-            dset_paths = f"{self.data_dir}/{dset_template}"
-            dset_files = glob.glob(dset_paths)
-            for dset_file in dset_files:
-                vardata: xa.DataArray = self.load_asc( dset_file ).expand_dims( dim=dict( time=[year2date(year)] ) )
-                dset_attrs = dict( year=year, collection="MERRAMAX", varname=vardata.name )
-                dset: xa.Dataset = self.create_cache_dset( vardata, dset_attrs )
-                filepath = self.variable_cache_filepath( str(vardata.name), year )
-                os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-                print( f"Writing cache file {filepath}, vrange={vrange(vardata)}")
-                dset.to_netcdf(filepath)
-
     def process(self, collection: str = None, **kwargs):
         years = list(range( *self.year_range ))
         reprocess = kwargs.get( 'reprocess', False )
@@ -213,10 +198,10 @@ class MERRADataProcessor:
         if reprocess or not os.path.exists(filepath):
             print(f" ** ** ** Processing variable {variable.name}, shape= {interp_var.shape}, dims= {interp_var.dims}, file= {filepath}")
             dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
-            print(f" -> Created cache dataset" )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
+            print(f" ** ** ** >> Writing cache data file: {filepath}")
             dset.to_netcdf(filepath)
-            print(f" ** ** ** >> Writing cache data file: {filepath}, time= {time.time()-t0} sec.")
+            print(f" >> Completed in time= {time.time()-t0} sec.")
         else:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
 
@@ -230,4 +215,4 @@ class MERRADataProcessor:
         global_attrs['RangeStartingTime']  = "23:30:00.000000"
         global_attrs['RangeEndingDate'] =  f"{year}-12-31"
         global_attrs['RangeEndingTime']  = "23:30:00.000000"
-        return xa.Dataset( {vdata.name: vdata}, global_attrs )
+        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=global_attrs )
