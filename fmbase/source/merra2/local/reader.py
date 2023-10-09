@@ -63,23 +63,19 @@ class MERRADataProcessor:
     def cache_dir(self):
         return cfg().platform.cache.format( root=cfg().platform.root )
 
-    def get_yearly_files(self, collection, year) -> List[str]:
+    def get_monthly_files(self, collection, year) -> Dict[int,str]:
         months = list(range(*self.month_range))
         assert "{year}" in self.file_template, "{year} field missing from platform.cov_files parameter"
         dset_template = self.file_template.format(collection=collection, year=year, month="*")
         dset_paths = f"{self.data_dir}/{dset_template}"
-        if len(months) == 12:
-            dset_files = glob.glob(dset_paths)
-            print(f" ** Found {len(dset_files)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}")
-        else:
-            dset_files = []
-            assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
-            for month in months:
-                dset_template = self.file_template.format(collection=collection, year=year, month=f"{month+1:0>2}")
-                dset_paths = f"{self.data_dir}/{dset_template}"
-                gfiles = glob.glob(dset_paths)
-                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
-                dset_files.extend( gfiles )
+        dset_files = {}
+        assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
+        for month in months:
+            dset_template = self.file_template.format(collection=collection, year=year, month=f"{month+1:0>2}")
+            dset_paths = f"{self.data_dir}/{dset_template}"
+            gfiles = glob.glob(dset_paths)
+            print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
+            dset_files[month] = gfiles
         if len(dset_files) == 0: print( f"Unable to find any variable data for glob: {dset_paths}" )
         return dset_files
 
@@ -125,24 +121,25 @@ class MERRADataProcessor:
         print(f"\n --------------- Processing collection {collection}  --------------- ")
         for year in years:
             t0 = time.time()
-            dset_files = self.get_yearly_files( collection, year )
-            dvars: List[str] = self.get_varnames( dset_files[0] )
-            if len( dvars ) == 0:
-                print(f" ** No dvars in this collection")
-                return
-            if not reprocess and self.cache_files_exist( dvars, year ):
-                print(f" ** Skipping already processed year {year}")
-            else:
-                print(f" ** Loading dataset files for dvars {dvars}, year={year}")
-                agg_dataset: xa.Dataset =  self.open_collection( collection, dset_files, year=year )
-                print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
-                for dvar in dvars:
-                    self.proccess_variable( dvar, agg_dataset, **kwargs )
-                agg_dataset.close()
+            dset_files: Dict[int,List[str]] = self.get_monthly_files( collection, year )
+            for month, dfiles in dset_files.items():
+                dvars: List[str] = self.get_varnames( dfiles[0] )
+                if len( dvars ) == 0:
+                    print(f" ** No dvars in this collection")
+                    return
+                if not reprocess and self.cache_files_exist( dvars, year, month ):
+                    print(f" ** Skipping already processed year {year}")
+                else:
+                    print(f" ** Loading dataset files for dvars {dvars}, year={year}")
+                    agg_dataset: xa.Dataset =  self.open_collection( collection, dfiles, year=year, month=month )
+                    print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
+                    for dvar in dvars:
+                        self.proccess_variable( dvar, agg_dataset, **kwargs )
+                    agg_dataset.close()
 
-    def cache_files_exist(self, varnames: List[str], year: int ) -> bool:
+    def cache_files_exist(self, varnames: List[str], year: int, month: int ) -> bool:
         for vname in varnames:
-            filepath = self.variable_cache_filepath(vname, year )
+            filepath = self.variable_cache_filepath(vname, year, month )
             if not os.path.exists( filepath ): return False
         return True
 
@@ -160,14 +157,16 @@ class MERRADataProcessor:
 
     def open_collection(self, collection, files: List[str], **kwargs) -> xa.Dataset:
         print( f" -----> open_collection[{collection}:{kwargs['year']}]>> {len(files)} files, Compute yearly averages: ", end="")
+        tave =  kwargs.get( 'tave', False )
         t0 = time.time()
         dset: xa.Dataset = xa.open_mfdataset(files)
         dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-        resampled_dset = xa.Dataset( self.get_dvariates( dset ), dset.coords ).resample(time='AS').mean('time')
-        resampled_dset.attrs.update(dset_attrs)
-        print( f" Loaded {len(resampled_dset.data_vars)} vars in time = {time.time()-t0:.2f} sec")
-        for vid, dvar in resampled_dset.data_vars.items(): dvar.attrs.update( dset.data_vars[vid].attrs )
-        return resampled_dset
+        sampled_dset = xa.Dataset( self.get_dvariates( dset ), dset.coords )
+        if tave: sampled_dset = sampled_dset.resample(time='AS').mean('time')
+        sampled_dset.attrs.update(dset_attrs)
+        print( f" Loaded {len(sampled_dset.data_vars)} vars in time = {time.time()-t0:.2f} sec")
+        for vid, dvar in sampled_dset.data_vars.items(): dvar.attrs.update( dset.data_vars[vid].attrs )
+        return sampled_dset
 
     # if (self.yext is None) or (self.yres is None):
     #     self.yci, self.xci = None, None
@@ -202,8 +201,8 @@ class MERRADataProcessor:
         newvar.attrs['fmissing_value'] = np.nan
         return newvar
 
-    def variable_cache_filepath(self, vname: str, year: int ) -> str:
-        filename = self.cache_file_template.format( varname=vname, year=year )
+    def variable_cache_filepath(self, vname: str, year: int, month: int ) -> str:
+        filename = self.cache_file_template.format( varname=vname, year=year, month=month )
         return f"{self.cache_dir}/{self.cfgId}/{filename}"
 
     def proccess_variable(self, varname: str, agg_dataset: xa.Dataset, **kwargs ):
@@ -211,7 +210,7 @@ class MERRADataProcessor:
         reprocess = kwargs.get('reprocess',False)
         variable: xa.DataArray = agg_dataset.data_vars[varname]
         interp_var: xa.DataArray = self.resample_variable(variable)
-        filepath = self.variable_cache_filepath( varname, agg_dataset.attrs['year'] )
+        filepath = self.variable_cache_filepath( varname, agg_dataset.attrs['year'], agg_dataset.attrs['month'] )
         if reprocess or not os.path.exists(filepath):
             print(f" ** ** ** Processing variable {variable.name}, shape= {interp_var.shape}, dims= {interp_var.dims}, file= {filepath}")
             dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )

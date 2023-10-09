@@ -1,8 +1,8 @@
 id: conus8
-cache_file_template: "{varname}_ave_{year}.nc"
+cache_file_template: "{varname}_ave_{year}-{month}.nc"
 year_range: [2022,2023,1]
 xext: [-130, -60]
 yext: [15, 55]
-dims: { lon: x, lat: y, lev: z, time: t }
+dims: { lon: x, lat: y, lev: z }
 vars: [ TS,QV2M,T2M,EFLUX,HFLUX,SPEED,PREVTOT,PRECTOTCORR,ALBEDO,LWGNT,SWGNT,TAUTOT,CLDTOT,GRN,LAI,GWETPROF,GWETROOT,TSURF,TSAT,FRWLT,QINFIL,GHLAND,WCHANGE,ECHANGE,PRMC,RZMC,EVPSOIL,EVPTRNS,EVPINTR,EVLAND ]
 levels: []
