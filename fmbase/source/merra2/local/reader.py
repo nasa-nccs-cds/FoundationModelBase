@@ -182,6 +182,7 @@ class MERRADataProcessor:
         xc, yc = newvar.coords['x'].values, newvar.coords['y'].values
         newvar.attrs['xres'], newvar.attrs['yres'] = (xc[1]-xc[0]).tolist(), (yc[1]-yc[0]).tolist()
         newvar.attrs['fmissing_value'] = np.nan
+        newvar.attrs.pop( 'valid_range', 0 )
         return newvar
 
     def variable_cache_filepath(self, vname: str, **kwargs ) -> str:
@@ -207,5 +208,6 @@ class MERRADataProcessor:
     @classmethod
     def create_cache_dset( cls, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
         print(f"\n ** create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
-        print(f" ---> attrs={vdata.attrs}")
+        print(f" vdata ---> attrs={vdata.attrs}")
+        print(f" dset ---> attrs={dset_attrs}")
         return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=dset_attrs )
