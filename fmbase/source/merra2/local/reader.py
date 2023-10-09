@@ -143,9 +143,8 @@ class MERRADataProcessor:
         t0 = time.time()
         dset: xa.Dataset = xa.open_mfdataset(files)
         dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-        sampled_dset = xa.Dataset( self.get_dvariates( dset ), dset.coords )
+        sampled_dset = xa.Dataset( self.get_dvariates( dset ), coords=dset.coords, attrs=dict(collection=collection, **dset_attrs) )
         if tave: sampled_dset = sampled_dset.resample(time='AS').mean('time')
-        sampled_dset.attrs.update(dset_attrs)
         print( f" Loaded {len(sampled_dset.data_vars)} in time = {time.time()-t0:.2f} sec, VARS:")
         for vid, dvar in sampled_dset.data_vars.items():
             dvar.attrs.update( dset.data_vars[vid].attrs )
@@ -185,8 +184,8 @@ class MERRADataProcessor:
         newvar.attrs['fmissing_value'] = np.nan
         return newvar
 
-    def variable_cache_filepath(self, vname: str, year: int, month: int ) -> str:
-        filename = self.cache_file_template.format( varname=vname, year=year, month=month )
+    def variable_cache_filepath(self, vname: str, **kwargs ) -> str:
+        filename = self.cache_file_template.format( varname=vname, collection=kwargs['collection'], year=kwargs['year'], month=kwargs['month'] )
         return f"{self.cache_dir}/{self.cfgId}/{filename}"
 
     def proccess_variable(self, varname: str, agg_dataset: xa.Dataset, **kwargs ):
@@ -194,7 +193,7 @@ class MERRADataProcessor:
         reprocess = kwargs.get('reprocess',False)
         variable: xa.DataArray = agg_dataset.data_vars[varname]
         interp_var: xa.DataArray = self.resample_variable(variable)
-        filepath = self.variable_cache_filepath( varname, agg_dataset.attrs['year'], agg_dataset.attrs['month'] )
+        filepath = self.variable_cache_filepath( varname, **agg_dataset.attrs )
         if reprocess or not os.path.exists(filepath):
             print(f" ** ** ** Processing variable {variable.name}, shape= {interp_var.shape}, dims= {interp_var.dims}, file= {filepath}")
             dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
