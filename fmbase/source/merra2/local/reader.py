@@ -112,7 +112,7 @@ class MERRADataProcessor:
                 if not reprocess and self.cache_files_exist( dvars, year, month ):
                     print(f" ** Skipping already processed year {year}")
                 else:
-                    print(f" ** Loading dataset files for dvars {dvars}, year={year}")
+                    print(f" ** Loading dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
                     agg_dataset: xa.Dataset =  self.open_collection( collection, dfiles, year=year, month=month )
                     print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
                     for dvar in dvars:
@@ -143,7 +143,7 @@ class MERRADataProcessor:
         t0 = time.time()
         dset: xa.Dataset = xa.open_mfdataset(files)
         dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-        sampled_dset = xa.Dataset( self.get_dvariates( dset ), coords=dset.coords, attrs=dict(collection=collection, **dset_attrs) )
+        sampled_dset = xa.Dataset( self.get_dvariates( dset ), coords=dset.coords, attrs=dset_attrs )
         if tave: sampled_dset = sampled_dset.resample(time='AS').mean('time')
         print( f" Loaded {len(sampled_dset.data_vars)} in time = {time.time()-t0:.2f} sec, VARS:")
         for vid, dvar in sampled_dset.data_vars.items():
