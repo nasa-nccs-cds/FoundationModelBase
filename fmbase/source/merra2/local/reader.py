@@ -210,4 +210,4 @@ class MERRADataProcessor:
         print(f"\n ** create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
         print(f" vdata ---> attrs={vdata.attrs}")
         print(f" dset ---> attrs={dset_attrs}")
-        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=dset_attrs )
+        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords ) #, attrs=dset_attrs )
