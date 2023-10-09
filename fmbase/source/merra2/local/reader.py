@@ -207,12 +207,5 @@ class MERRADataProcessor:
 
     @classmethod
     def create_cache_dset( cls, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
-        print(f" create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, dset_attrs = {dset_attrs} " )
-        year = dset_attrs['year']
-        global_attrs = dict( **dset_attrs )
-        global_attrs.update( varname=vdata.name, year=year )
-        global_attrs['RangeStartingDate'] =  f"{year-1}-12-31"
-        global_attrs['RangeStartingTime']  = "23:30:00.000000"
-        global_attrs['RangeEndingDate'] =  f"{year}-12-31"
-        global_attrs['RangeEndingTime']  = "23:30:00.000000"
-        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=global_attrs )
+        print(f" create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
+        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=dset_attrs )
