@@ -181,9 +181,9 @@ class MERRADataProcessor:
         if self.yres is not None:
             xc0, yc0 = dvar.coords['x'].values,  dvar.coords['y'].values
             if self.yext is  None:
-                self.xext = [ xc0[0], xc0[-1] ]
-                self.yext = [ yc0[0], yc0[-1] ]
-            xc1, yc1 = range(self.xext[0],self.xext[1],self.xres), range(self.yext[0],self.yext[1],self.yres)
+                self.xext = [ xc0[0], xc0[-1]+self.xres/2 ]
+                self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
+            xc1, yc1 = np.arange(self.xext[0],self.xext[1],self.xres), np.arange(self.yext[0],self.yext[1],self.yres)
             new_coords = dict( x=xc1, y=yc1 )
             if self.levels is not None: new_coords['z'] = self.levels
             newvar: xa.DataArray = dvar.interp( **new_coords, assume_sorted=True)
