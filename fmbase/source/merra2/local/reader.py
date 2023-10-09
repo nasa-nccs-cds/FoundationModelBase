@@ -206,5 +206,6 @@ class MERRADataProcessor:
 
     @classmethod
     def create_cache_dset( cls, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
-        print(f" create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
+        print(f"\n ** create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
+        print(f" ---> attrs={vdata.attrs}")
         return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=dset_attrs )
