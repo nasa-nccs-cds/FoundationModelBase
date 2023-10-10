@@ -160,6 +160,7 @@ class MERRADataProcessor:
 
     def resample_variable(self, variable: xa.DataArray) -> xa.DataArray:
         print( f"Rename, coords: {list(variable.coords.keys())}, map: {self.dmap}")
+        print(f" Resample_variable: " )
         dvar: xa.DataArray =  variable.rename( **self.dmap )
         if self.yres is not None:
             xc0, yc0 = dvar.coords['x'].values,  dvar.coords['y'].values
@@ -168,11 +169,12 @@ class MERRADataProcessor:
                 self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
             xc1, yc1 = np.arange(self.xext[0],self.xext[1],self.xres), np.arange(self.yext[0],self.yext[1],self.yres)
             new_coords = dict( x=xc1, y=yc1 )
-            print(f"resample_variable: xc1 shape={xc1.shape}, yc1 shape={yc1.shape}, xext={self.xext}, yext={self.yext}, xres={self.xres}, yres={self.yres}" )
+            print(f" >> xc1 shape={xc1.shape}, yc1 shape={yc1.shape}, xext={self.xext}, yext={self.yext}, xres={self.xres}, yres={self.yres}" )
             if self.levels is not None: new_coords['z'] = self.levels
+            print(f" >> dvar dims={dvar.dims}, shape={dvar.shape}, coords={ {k:v.shape for k,v in dvar.coords.items()} }")
             newvar: xa.DataArray = dvar.interp( **new_coords, assume_sorted=True).compute()
             newvar.attrs.update(dvar.attrs)
-            print( f"resample_variable: newvar.shape={newvar.shape}, dims={newvar.dims}, coords={ {k:v.shape for k,v in newvar.coords.items()} }")
+            print( f" >> newvar.shape={newvar.shape}, dims={newvar.dims}, coords={ {k:v.shape for k,v in newvar.coords.items()} }")
         elif self.yext is not None:
             scoords = {'x': slice(self.xext[0], self.xext[1]), 'y': slice(self.yext[0], self.yext[1])}
             newvar: xa.DataArray = dvar.sel(**scoords)
