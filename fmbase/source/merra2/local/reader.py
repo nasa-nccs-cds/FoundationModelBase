@@ -171,10 +171,13 @@ class MERRADataProcessor:
             new_coords = dict( x=xc1, y=yc1 )
             print(f" >> xc1 shape={xc1.shape}, yc1 shape={yc1.shape}, xext={self.xext}, yext={self.yext}, xres={self.xres}, yres={self.yres}" )
             if self.levels is not None: new_coords['z'] = self.levels
+            newvar: xa.DataArray = dvar
             print(f" >> dvar new levels = {self.levels}, old levels = {dvar.coords['z']}")
             print(f" >> dvar dims={dvar.dims}, shape={dvar.shape}, coords={ {k:v.shape for k,v in dvar.coords.items()} }")
             print(f" >> dvar new coords={ {k: v.shape for k, v in new_coords.items()} }")
-            newvar: xa.DataArray = dvar.interp( **new_coords, assume_sorted=True).compute()
+            for cname, cval in new_coords.items():
+                print(f" >> dvar INTERP: cname={cname}, cvals shape={cval.shape}")
+                newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') ).compute()
             newvar.attrs.update(dvar.attrs)
             print( f" >> newvar.shape={newvar.shape}, dims={newvar.dims}, coords={ {k:v.shape for k,v in newvar.coords.items()} }")
         elif self.yext is not None:
