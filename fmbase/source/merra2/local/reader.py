@@ -176,8 +176,9 @@ class MERRADataProcessor:
             print(f" >> dvar dims={dvar.dims}, shape={dvar.shape}, coords={ {k:v.shape for k,v in dvar.coords.items()} }")
             print(f" >> dvar new coords={ {k: v.shape for k, v in new_coords.items()} }")
             for cname, cval in new_coords.items():
+                t0 = time.time()
                 print(f" >> dvar INTERP: cname={cname}, cvals shape={cval.shape}")
-                newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') ).compute()
+                newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') )
             newvar.attrs.update(dvar.attrs)
             print( f" >> newvar.shape={newvar.shape}, dims={newvar.dims}, coords={ {k:v.shape for k,v in newvar.coords.items()} }")
         elif self.yext is not None:
@@ -190,6 +191,9 @@ class MERRADataProcessor:
         newvar.attrs['xres'], newvar.attrs['yres'] = (xc[1]-xc[0]).tolist(), (yc[1]-yc[0]).tolist()
         newvar.attrs['fmissing_value'] = np.nan
         newvar.attrs.pop( 'valid_range', 0 )
+        t0 = time.time()
+        newvar = newvar.compute()
+        print(f"Computed interpolation in {time.time()-t0:.2f} sec, new shape = {newvar.shape}")
         return newvar
 
     def variable_cache_filepath(self, vname: str, **kwargs ) -> str:
