@@ -12,8 +12,7 @@ Framework for feeding data from various sources to FoundationModel/DigitalTwin t
 
     > conda create -n fmbase -c conda-forge 
     > conda activate fmbase
-    > conda install -c conda-forge pydap numpy xarray dask matplotlib scipy
-    > pip install netCDF4
+    > conda install -c conda-forge h5py h5netcdf pydap numpy xarray dask matplotlib scipy netCDF4
     > pip install hydra-core --upgrade
 
 

@@ -200,7 +200,7 @@ class MERRADataProcessor:
             dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
             print(f" ** ** ** >> Writing cache data file: {filepath}")
-            dset.to_netcdf( filepath, format="NETCDF4", engine="netcdf4" )
+            dset.to_netcdf( filepath, engine="h5netcdf" )
             print(f" >> Completed in time= {time.time()-t0} sec.")
         else:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
@@ -210,4 +210,4 @@ class MERRADataProcessor:
         print(f"\n ** create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
         print(f" vdata ---> attrs={vdata.attrs}")
         print(f" dset ---> attrs={dset_attrs}")
-        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords ) #, attrs=dset_attrs )
+        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=dset_attrs )
