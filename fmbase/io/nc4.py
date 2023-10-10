@@ -13,6 +13,9 @@ def nc4_write_array( path: str, var: xa.DataArray ):
 #		cvar.units = coord.attrs['units']
 #		cvar.long_name = coord.attrs['long_name']
 	dvar: Variable = ncfile.createVariable(var.name, datatype=var.dtype, dimensions=var.dims, fill_value=np.nan)
+	print( f" nc4_write_array: ")
+	print(f"  >>  var:  shape = {var.shape} ({var.values.shape})")
+	print(f"  >>  dvar: shape = {dvar.shape}, dims = {dvar.get_dims()}")
 	if   var.ndim == 1:   dvar[:] = var.values
 	elif var.ndim == 2:   dvar[:,:] = var.values
 	elif var.ndim == 3:   dvar[:,:,:] = var.values
