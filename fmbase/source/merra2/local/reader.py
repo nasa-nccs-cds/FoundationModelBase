@@ -173,8 +173,9 @@ class MERRADataProcessor:
         return self._subsample_coords
 
 
-    def subsample(self, varray: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
+    def subsample(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
         t0 = time.time()
+        varray: xa.DataArray = variable.rename(**self.dmap)
         scoords = self.subsample_coords( varray )
         newvar: xa.DataArray = varray
         for cname, cval in scoords.items():
@@ -205,10 +206,9 @@ class MERRADataProcessor:
     #     self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
     #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
 
-    def resample_variable(self, variable: xa.DataArray) -> xa.DataArray:
-        print( f"Rename, coords: {list(variable.coords.keys())}, map: {self.dmap}")
+    def resample_variable(self, dvar: xa.DataArray) -> xa.DataArray:
+        print( f"Rename, coords: {list(dvar.coords.keys())}, map: {self.dmap}")
         print(f" Resample_variable: " )
-        dvar: xa.DataArray =  variable.rename( **self.dmap )
         if self.yres is not None:
             xc0, yc0 = dvar.coords['x'].values,  dvar.coords['y'].values
             if self.yext is  None:
