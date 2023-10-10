@@ -197,10 +197,10 @@ class MERRADataProcessor:
         filepath = self.variable_cache_filepath( varname, **agg_dataset.attrs )
         if reprocess or not os.path.exists(filepath):
             print(f" ** ** ** Processing variable {variable.name}, shape= {interp_var.shape}, dims= {interp_var.dims}, file= {filepath}")
-            dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
+      #      dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
             print(f" ** ** ** >> Writing cache data file: {filepath}")
-            dset.to_netcdf( filepath, engine="h5netcdf" )
+            interp_var.to_netcdf( filepath )
             print(f" >> Completed in time= {time.time()-t0} sec.")
         else:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
