@@ -168,6 +168,7 @@ class MERRADataProcessor:
                 self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
             xc1, yc1 = np.arange(self.xext[0],self.xext[1],self.xres), np.arange(self.yext[0],self.yext[1],self.yres)
             new_coords = dict( x=xc1, y=yc1 )
+            print(f"resample_variable: xc1 shape={xc1.shape}, yc1 shape={yc1.shape}, xext={self.xext}, yext={self.yext}, xres={self.xres}, yres={self.yres}" )
             if self.levels is not None: new_coords['z'] = self.levels
             newvar: xa.DataArray = dvar.interp( **new_coords, assume_sorted=True).compute()
             newvar.attrs.update(dvar.attrs)
