@@ -55,6 +55,7 @@ class MERRADataProcessor:
         self.file_template = cfg().platform.dataset_files
         self.cache_file_template = cfg().scenario.cache_file_template
         self.cfgId = cfg().scenario.id
+        self._subsample_coords: Dict[str,np.ndarray] = None
 
     @property
     def data_dir(self):
@@ -114,11 +115,10 @@ class MERRADataProcessor:
                     print(f" ** Skipping already processed year {year}")
                 else:
                     print(f" ** Loading dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
-                    agg_dataset: xa.Dataset =  self.open_collection( collection, dfiles, year=year, month=month )
-                    print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
-                    for dvar in dvars:
-                        self.proccess_variable( dvar, agg_dataset, **kwargs )
-                    agg_dataset.close()
+                    subsampled_data: Dict[str,xa.DataArray] =  self.open_subsample( collection, dfiles, year=year, month=month )
+#                    print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
+#                    for dvar in dvars:
+#                        self.proccess_variable( dvar, agg_dataset, **kwargs )
 
     def cache_files_exist(self, varnames: List[str], year: int, month: int ) -> bool:
         for vname in varnames:
@@ -151,6 +151,53 @@ class MERRADataProcessor:
             dvar.attrs.update( dset.data_vars[vid].attrs )
             print( f" ** {vid}: {dvar.shape}")
         return sampled_dset
+
+    def subsample_coords(self, dvar: xa.DataArray ):
+        if self._subsample_coords is None:
+            self._subsample_coords = {} if self.levels is None else dict(z=self.levels)
+            if self.xres is not None:
+                if self.xext is  None:
+                    xc0 = dvar.coords['x'].values
+                    self.xext = [ xc0[0], xc0[-1]+self.xres/2 ]
+                self._subsample_coords['x'] = np.arange(self.xext[0],self.xext[1],self.xres)
+            elif self.xext is not None:
+                self._subsample_coords['x'] = slice(self.xext[0], self.xext[1])
+
+            if self.yres is not None:
+                if self.yext is  None:
+                    yc0 = dvar.coords['y'].values
+                    self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
+                self._subsample_coords['y'] = np.arange(self.yext[0],self.yext[1],self.yres)
+            elif self.yext is not None:
+                self._subsample_coords['y'] = slice(self.yext[0], self.yext[1])
+        return self._subsample_coords
+
+
+    def subsample(self, varray: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
+        t0 = time.time()
+        scoords = self.subsample_coords( varray )
+        newvar: xa.DataArray = varray
+        for cname, cval in scoords.items():
+            newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') )
+            newvar.attrs.update( global_attrs )
+            newvar.attrs.update( varray.attrs )
+        result = newvar.compute()
+        print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}")
+        return result
+
+    def open_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
+        print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
+        tave =  kwargs.get( 'tave', False )
+        t0 = time.time()
+        samples = {}
+        for file in files:
+            dset: xa.Dataset = xa.open_dataset(file)
+            dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
+            dvars: Dict[str,xa.DataArray] =  self.get_dvariates( dset )
+            print( f"Processing vars {list(dvars.keys())} from file {file}")
+            for vname, varray in dvars.items():
+                samples[vname] = self.subsample( varray, dset_attrs )
+        return samples
 
     # if (self.yext is None) or (self.yres is None):
     #     self.yci, self.xci = None, None
