@@ -188,9 +188,8 @@ class MERRADataProcessor:
 
     def open_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
         print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
-        tave =  kwargs.get( 'tave', False )
         t0 = time.time()
-        samples = {}
+        samples: Dict[str,List[xa.DataArray]] = {}
         for file in sorted(files):
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
@@ -199,7 +198,12 @@ class MERRADataProcessor:
             for vname, varray in dvars.items():
                 var_samples = samples.setdefault(vname,[])
                 var_samples.append( self.subsample( varray, dset_attrs ) )
-        return samples
+        merged_samples = {}
+        for vname, vsamples in samples.items():
+            mvar: xa.DataArray = xa.concat( vsamples, dim="time" )
+            merged_samples[vname] = mvar
+            print(f"Merged var {vname}: shape= {mvar.shape}, dims= {mvar.dims}")
+        return merged_samples
 
     # if (self.yext is None) or (self.yres is None):
     #     self.yci, self.xci = None, None
