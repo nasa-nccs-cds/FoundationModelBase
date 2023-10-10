@@ -183,7 +183,7 @@ class MERRADataProcessor:
             newvar.attrs.update( global_attrs )
             newvar.attrs.update( varray.attrs )
         result = newvar.compute()
-        print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}")
+        print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}, attrs = {list(variable.keys())}")
         return result
 
     def open_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
@@ -191,13 +191,14 @@ class MERRADataProcessor:
         tave =  kwargs.get( 'tave', False )
         t0 = time.time()
         samples = {}
-        for file in files:
+        for file in sorted(files):
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
             dvars: Dict[str,xa.DataArray] =  self.get_dvariates( dset )
             print( f"Processing vars {list(dvars.keys())} from file {file}")
             for vname, varray in dvars.items():
-                samples[vname] = self.subsample( varray, dset_attrs )
+                var_samples = samples.setdefault(vname,[])
+                var_samples.append( self.subsample( varray, dset_attrs ) )
         return samples
 
     # if (self.yext is None) or (self.yres is None):
