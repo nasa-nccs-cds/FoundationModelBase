@@ -8,6 +8,7 @@ from pathlib import Path
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import hydra, glob, sys, os, time
+from fmbase.io.nc4 import nc4_write_array
 
 def year2date( year: Union[int,str] ) -> np.datetime64:
     return np.datetime64( int(year) - 1970, 'Y')
@@ -200,7 +201,8 @@ class MERRADataProcessor:
       #      dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
             print(f" ** ** ** >> Writing cache data file: {filepath}")
-            interp_var.to_netcdf( filepath )
+ #           interp_var.to_netcdf( filepath )
+            nc4_write_array( filepath, interp_var )
             print(f" >> Completed in time= {time.time()-t0} sec.")
         else:
             print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
