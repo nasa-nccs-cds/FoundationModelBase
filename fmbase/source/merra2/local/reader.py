@@ -183,7 +183,7 @@ class MERRADataProcessor:
             newvar.attrs.update( global_attrs )
             newvar.attrs.update( varray.attrs )
         result = newvar.compute()
-        print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}, attrs = {list(variable.keys())}")
+        print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}, attrs = {list(variable.attrs)}")
         return result
 
     def open_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
