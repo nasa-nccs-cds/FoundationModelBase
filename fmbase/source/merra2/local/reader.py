@@ -114,11 +114,10 @@ class MERRADataProcessor:
                 if not reprocess and self.cache_files_exist( dvars, year, month ):
                     print(f" ** Skipping already processed year {year}")
                 else:
-                    print(f" ** Loading dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
-                    subsampled_data: Dict[str,xa.DataArray] =  self.open_subsample( collection, dfiles, year=year, month=month )
-#                    print(f" -- -- Processing {len(dset_files)} files, load time = {time.time()-t0:.2f} ")
-#                    for dvar in dvars:
-#                        self.proccess_variable( dvar, agg_dataset, **kwargs )
+                    print(f" ** Processing dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
+                    self.process_subsample( collection, dfiles, year=year, month=month)
+            print(f" -- -- Processed {len(dset_files)} files for {month}/{year}, time = {time.time()-t0:.2f} ")
+
 
     def cache_files_exist(self, varnames: List[str], year: int, month: int ) -> bool:
         for vname in varnames:
@@ -186,7 +185,7 @@ class MERRADataProcessor:
         print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}, attrs = {list(variable.attrs)}")
         return result
 
-    def open_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
+    def process_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
         print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
         t0 = time.time()
         samples: Dict[str,List[xa.DataArray]] = {}
@@ -198,12 +197,18 @@ class MERRADataProcessor:
             for vname, varray in dvars.items():
                 var_samples = samples.setdefault(vname,[])
                 var_samples.append( self.subsample( varray, dset_attrs ) )
-        merged_samples = {}
+            dset.close()
         for vname, vsamples in samples.items():
+            t1 = time.time()
             mvar: xa.DataArray = xa.concat( vsamples, dim="time" )
-            merged_samples[vname] = mvar
-            print(f"Merged var {vname}: shape= {mvar.shape}, dims= {mvar.dims}")
-        return merged_samples
+            print(f"Saving Merged var {vname}: shape= {mvar.shape}, dims= {mvar.dims}")
+            filepath = self.variable_cache_filepath( vname, collection=collection, **kwargs )
+            os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
+            mvar.to_netcdf( filepath, format="NETCDF4" )
+            print(f" ** ** ** Saved variable {vname} to file= {filepath} in time = {time.time()-t1} sec")
+        print(f"\n Completed processing in time = {(time.time()-t0)/60} min")
+
+
 
     # if (self.yext is None) or (self.yres is None):
     #     self.yci, self.xci = None, None
