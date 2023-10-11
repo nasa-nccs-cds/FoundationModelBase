@@ -129,7 +129,7 @@ class MERRADataProcessor:
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
         dset: xa.Dataset = xa.open_dataset(dset_file)
-        covnames = [vname for vname in dset.data_vars.keys() if vname in cfg().scenario.vars]
+        covnames = list(dset.data_vars.keys())
         dset.close()
         return covnames
 
