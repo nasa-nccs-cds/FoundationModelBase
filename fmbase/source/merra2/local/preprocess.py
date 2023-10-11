@@ -53,7 +53,10 @@ class MERRADataProcessor:
         self.year_range = cfg().scenario.year_range
         self.month_range = cfg().scenario.get('month_range',[0,12,1])
         self.file_template = cfg().platform.dataset_files
-        self.cache_file_template = cfg().scenario.cache_file_template
+        self.group = cfg().scenario.get('group','Nv')
+        self.freq = cfg().scenario.get('freq', 'tave3')
+        self.collections = cfg().scenario.collections
+        self.cache_file_template = "{varname}_{year}-{month}.nc"
         self.cfgId = cfg().scenario.id
         self._subsample_coords: Dict[str,np.ndarray] = None
 
@@ -62,8 +65,9 @@ class MERRADataProcessor:
         return cfg().platform.dataset_root.format( root=cfg().platform.root )
 
     @property
-    def cache_dir(self):
-        return cfg().platform.cache.format( root=cfg().platform.root )
+    def results_dir(self):
+        base_dir = cfg().platform.processed.format( root=cfg().platform.root )
+        return  f"{base_dir}/data/merra2"
 
     def get_monthly_files(self, collection, year) -> Dict[int,List[str]]:
         months = list(range(*self.month_range))
@@ -71,7 +75,7 @@ class MERRADataProcessor:
         dset_files = {}
         assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
         for month in months:
-            dset_template = self.file_template.format(collection=collection, year=year, month=f"{month+1:0>2}")
+            dset_template = self.file_template.format(collection=collection, year=year, month=f"{month+1:0>2}", group=self.group, freq=self.freq)
             dset_paths = f"{self.data_dir}/{dset_template}"
             gfiles = glob.glob(dset_paths)
             print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
@@ -99,24 +103,21 @@ class MERRADataProcessor:
         header['yres'] = cs
         return xa.DataArray( raster_data, name=varname, dims=['lat','lon'], coords=dict(lat=yc,lon=xc), attrs=header )
 
-    def process(self, collection: str = None, **kwargs):
+    def process(self, **kwargs):
         years = list(range( *self.year_range ))
-        reprocess = kwargs.get( 'reprocess', False )
-        print(f"\n --------------- Processing collection {collection}  --------------- ")
-        for year in years:
-            t0 = time.time()
-            dset_files: Dict[int,List[str]] = self.get_monthly_files( collection, year )
-            for month, dfiles in dset_files.items():
-                dvars: List[str] = self.get_varnames( dfiles[0] )
-                if len( dvars ) == 0:
-                    print(f" ** No dvars in this collection")
-                    return
-                if not reprocess and self.cache_files_exist( dvars, year, month ):
-                    print(f" ** Skipping already processed year {year}")
-                else:
-                    print(f" ** Processing dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
-                    self.process_subsample( collection, dfiles, year=year, month=month)
-            print(f" -- -- Processed {len(dset_files)} files for {month}/{year}, time = {time.time()-t0:.2f} ")
+        for collection in self.collections:
+            print(f"\n --------------- Processing collection {collection}  --------------- ")
+            for year in years:
+                t0 = time.time()
+                dset_files: Dict[int,List[str]] = self.get_monthly_files( collection, year )
+                for month, dfiles in dset_files.items():
+                    dvars: List[str] = self.get_varnames( dfiles[0] )
+                    if len( dvars ) == 0:
+                        print(f" ** No dvars in this collection" )
+                    else:
+                        print(f" ** Processing dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
+                        self.process_subsample( collection, dfiles, year=year, month=month)
+                    print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
 
 
     def cache_files_exist(self, varnames: List[str], year: int, month: int ) -> bool:
@@ -134,7 +135,7 @@ class MERRADataProcessor:
 
     @classmethod
     def get_dvariates(cls, dset: xa.Dataset ) -> Dict[str,xa.DataArray]:
-        dvariates: Dict[str,xa.DataArray] = { vid: dvar for vid, dvar in dset.data_vars.items() if vid in cfg().scenario.vars }
+        dvariates: Dict[str,xa.DataArray] = { vid: dvar for vid, dvar in dset.data_vars.items() }
         return { vid: dvar.where(dvar != dvar.attrs['fmissing_value'], np.nan) for vid, dvar in dvariates.items()}
 
     def open_collection(self, collection, files: List[str], **kwargs) -> xa.Dataset:
@@ -202,81 +203,12 @@ class MERRADataProcessor:
             t1 = time.time()
             mvar: xa.DataArray = xa.concat( vsamples, dim="time" )
             print(f"Saving Merged var {vname}: shape= {mvar.shape}, dims= {mvar.dims}")
-            filepath = self.variable_cache_filepath( vname, collection=collection, **kwargs )
+            filepath = self.variable_cache_filepath( vname, collection, **kwargs )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
             mvar.to_netcdf( filepath, format="NETCDF4" )
             print(f" ** ** ** Saved variable {vname} to file= {filepath} in time = {time.time()-t1} sec")
-        print(f"\n Completed processing in time = {(time.time()-t0)/60} min")
+        print(f"  Completed processing in time = {(time.time()-t0)/60} min")
 
-
-
-    # if (self.yext is None) or (self.yres is None):
-    #     self.yci, self.xci = None, None
-    # else:
-    #     self.yci = np.arange( self.yext[0], self.yext[1]+self.yres/2, self.yres )
-    #     self.xci = np.arange( self.xext[0], self.xext[1]+self.xres/2, self.xres )
-
-    def resample_variable(self, dvar: xa.DataArray) -> xa.DataArray:
-        print( f"Rename, coords: {list(dvar.coords.keys())}, map: {self.dmap}")
-        print(f" Resample_variable: " )
-        if self.yres is not None:
-            xc0, yc0 = dvar.coords['x'].values,  dvar.coords['y'].values
-            if self.yext is  None:
-                self.xext = [ xc0[0], xc0[-1]+self.xres/2 ]
-                self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
-            xc1, yc1 = np.arange(self.xext[0],self.xext[1],self.xres), np.arange(self.yext[0],self.yext[1],self.yres)
-            new_coords = dict( x=xc1, y=yc1 )
-            print(f" >> xc1 shape={xc1.shape}, yc1 shape={yc1.shape}, xext={self.xext}, yext={self.yext}, xres={self.xres}, yres={self.yres}" )
-            if self.levels is not None: new_coords['z'] = self.levels
-            newvar: xa.DataArray = dvar
-            print(f" >> dvar new levels = {self.levels}, old levels = {dvar.coords['z']}")
-            print(f" >> dvar dims={dvar.dims}, shape={dvar.shape}, coords={ {k:v.shape for k,v in dvar.coords.items()} }")
-            print(f" >> dvar new coords={ {k: v.shape for k, v in new_coords.items()} }")
-            for cname, cval in new_coords.items():
-                t0 = time.time()
-                print(f" >> dvar INTERP: cname={cname}, cvals shape={cval.shape}")
-                newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') )
-            newvar.attrs.update(dvar.attrs)
-            print( f" >> newvar.shape={newvar.shape}, dims={newvar.dims}, coords={ {k:v.shape for k,v in newvar.coords.items()} }")
-        elif self.yext is not None:
-            scoords = {'x': slice(self.xext[0], self.xext[1]), 'y': slice(self.yext[0], self.yext[1])}
-            newvar: xa.DataArray = dvar.sel(**scoords)
-            newvar.attrs.update(dvar.attrs)
-        else:
-            newvar: xa.DataArray = dvar
-        xc, yc = newvar.coords['x'].values, newvar.coords['y'].values
-        newvar.attrs['xres'], newvar.attrs['yres'] = (xc[1]-xc[0]).tolist(), (yc[1]-yc[0]).tolist()
-        newvar.attrs['fmissing_value'] = np.nan
-        newvar.attrs.pop( 'valid_range', 0 )
-        t0 = time.time()
-        newvar = newvar.compute()
-        print(f"Computed interpolation in {time.time()-t0:.2f} sec, new shape = {newvar.shape}")
-        return newvar
-
-    def variable_cache_filepath(self, vname: str, **kwargs ) -> str:
-        filename = self.cache_file_template.format( varname=vname, collection=kwargs['collection'], year=kwargs['year'], month=kwargs['month'] )
-        return f"{self.cache_dir}/{self.cfgId}/{filename}"
-
-    def proccess_variable(self, varname: str, agg_dataset: xa.Dataset, **kwargs ):
-        t0 = time.time()
-        reprocess = kwargs.get('reprocess',False)
-        variable: xa.DataArray = agg_dataset.data_vars[varname]
-        interp_var: xa.DataArray = self.resample_variable(variable)
-        filepath = self.variable_cache_filepath( varname, **agg_dataset.attrs )
-        if reprocess or not os.path.exists(filepath):
-            print(f" ** ** ** Processing variable {variable.name}, shape= {interp_var.shape}, dims= {interp_var.dims}, file= {filepath}")
-      #      dset: xa.Dataset = self.create_cache_dset(interp_var, agg_dataset.attrs )
-            os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-            print(f" ** ** ** >> Writing cache data file: {filepath}")
- #           interp_var.to_netcdf( filepath )
-            nc4_write_array( filepath, interp_var )
-            print(f" >> Completed in time= {time.time()-t0} sec.")
-        else:
-            print(f" ** ** ** >> Skipping existing variable {variable.name}, file= {filepath} ")
-
-    @classmethod
-    def create_cache_dset( cls, vdata: xa.DataArray, dset_attrs: Dict ) -> xa.Dataset:
-        print(f"\n ** create_cache_dset, shape={vdata.shape}, dims={vdata.dims}, coords = { {k:v.shape for k,v in vdata.coords.items()} } " )
-        print(f" vdata ---> attrs={vdata.attrs}")
-        print(f" dset ---> attrs={dset_attrs}")
-        return xa.Dataset( {vdata.name: vdata}, coords=vdata.coords, attrs=dset_attrs )
+    def variable_cache_filepath(self, vname: str, collection: str, **kwargs ) -> str:
+        filename = self.cache_file_template.format( varname=vname, year=kwargs['year'], month=kwargs['month'] )
+        return f"{self.results_dir}/merra2/{self.cfgId}/{self.freq}_{collection}_{self.group}/{filename}"

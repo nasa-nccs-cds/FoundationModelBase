@@ -1,9 +1,0 @@
-id: conus8
-cache_file_template: "{collection}_{varname}_{year}-{month}.nc"
-year_range: [2000,2001,1]
-month_range: [0,4,1]
-xres: 2.0
-yres: 2.0
-dims: { lon: x, lat: y, lev: z }
-vars: [ QV ]
-levels: [ 1000, 900, 800, 700 ]
