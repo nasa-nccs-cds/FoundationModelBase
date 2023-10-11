@@ -1,4 +1,4 @@
 defaults:
   - platform: explore
-  - scenario: conus8
+  - scenario: graphcast.2.37.1
   - learning: demo1
