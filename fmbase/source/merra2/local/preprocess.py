@@ -116,7 +116,6 @@ class MERRADataProcessor:
                         print(f" ** No dvars in this collection" )
                     else:
                         for dvar in dvars:
-                            print(f" ** Processing dataset {len(dfiles)} files for dvar {collection}:{dvar}, month={month}, year={year}")
                             self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
                     print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
 
@@ -168,9 +167,9 @@ class MERRADataProcessor:
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
         filepath = self.variable_cache_filepath(dvar, collection, **kwargs)
-        reprocess = kwargs.get( 'reprocess', True )
+        reprocess = kwargs.pop( 'reprocess', True )
         if (not os.path.exists(filepath)) or reprocess:
-            print(f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
+            print(f" ** Processing variable {dvar} in collection {collection}, month={kwargs['month']}, year={kwargs['year']}: {len(files)} files")
             t0 = time.time()
             samples: List[xa.DataArray] = []
             for file in sorted(files):
