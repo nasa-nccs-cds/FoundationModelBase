@@ -188,6 +188,8 @@ class MERRADataProcessor:
                 mvar.to_netcdf( filepath, format="NETCDF4" )
                 print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
                 print(f"  Completed processing in time = {(time.time()-t0)/60} min")
+        else:
+            print( f" ** Skipping {collection}:{dvar} due to existence of processed file {filepath}")
 
     def variable_cache_filepath(self, vname: str, collection: str, **kwargs ) -> str:
         filename = self.cache_file_template.format( varname=vname, year=kwargs['year'], month=kwargs['month'] )
