@@ -115,8 +115,9 @@ class MERRADataProcessor:
                     if len( dvars ) == 0:
                         print(f" ** No dvars in this collection" )
                     else:
-                        print(f" ** Processing dataset {len(dfiles)} files for dvars {collection}:{dvars}, month={month}, year={year}")
-                        self.process_subsample( collection, dfiles, year=year, month=month)
+                        for dvar in dvars:
+                            print(f" ** Processing dataset {len(dfiles)} files for dvar {collection}:{dvar}, month={month}, year={year}")
+                            self.process_subsample( collection, dvar, dfiles, year=year, month=month )
                     print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
 
 
@@ -132,25 +133,6 @@ class MERRADataProcessor:
         covnames = list(dset.data_vars.keys())
         dset.close()
         return covnames
-
-    @classmethod
-    def get_dvariates(cls, dset: xa.Dataset ) -> Dict[str,xa.DataArray]:
-        dvariates: Dict[str,xa.DataArray] = { vid: dvar for vid, dvar in dset.data_vars.items() }
-        return { vid: dvar.where(dvar != dvar.attrs['fmissing_value'], np.nan) for vid, dvar in dvariates.items()}
-
-    def open_collection(self, collection, files: List[str], **kwargs) -> xa.Dataset:
-        print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
-        tave =  kwargs.get( 'tave', False )
-        t0 = time.time()
-        dset: xa.Dataset = xa.open_mfdataset(files)
-        dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-        sampled_dset = xa.Dataset( self.get_dvariates( dset ), coords=dset.coords, attrs=dset_attrs )
-        if tave: sampled_dset = sampled_dset.resample(time='AS').mean('time')
-        print( f" Loaded {len(sampled_dset.data_vars)} in time = {time.time()-t0:.2f} sec, VARS:")
-        for vid, dvar in sampled_dset.data_vars.items():
-            dvar.attrs.update( dset.data_vars[vid].attrs )
-            print( f" ** {vid}: {dvar.shape}")
-        return sampled_dset
 
     def subsample_coords(self, dvar: xa.DataArray ):
         if self._subsample_coords is None:
@@ -174,7 +156,6 @@ class MERRADataProcessor:
 
 
     def subsample(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
-        t0 = time.time()
         varray: xa.DataArray = variable.rename(**self.dmap)
         scoords = self.subsample_coords( varray )
         newvar: xa.DataArray = varray
@@ -182,32 +163,28 @@ class MERRADataProcessor:
             newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') )
             newvar.attrs.update( global_attrs )
             newvar.attrs.update( varray.attrs )
-        result = newvar.compute()
-        print( f"Computed subsample for var {varray.name} in {time.time()-t0} sec, new shape = {result.shape}, attrs = {list(variable.attrs)}")
-        return result
+        return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
 
-    def process_subsample(self, collection, files: List[str], **kwargs) -> Dict[str,xa.DataArray]:
+    def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
         print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
         t0 = time.time()
-        samples: Dict[str,List[xa.DataArray]] = {}
+        samples: List[xa.DataArray] = []
         for file in sorted(files):
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-            dvars: Dict[str,xa.DataArray] =  self.get_dvariates( dset )
-            print( f"Processing vars {list(dvars.keys())} from file {file}")
-            for vname, varray in dvars.items():
-                var_samples = samples.setdefault(vname,[])
-                var_samples.append( self.subsample( varray, dset_attrs ) )
-            dset.close()
-        for vname, vsamples in samples.items():
+            print( f"Processing var {dvar} from file {file}")
+            samples.append( self.subsample( dset.data_vars[dvar], dset_attrs ) )
+        if len(samples) == 0:
+            print( f"Found no files for variable {dvar} in collection {collection}")
+        else:
             t1 = time.time()
-            mvar: xa.DataArray = xa.concat( vsamples, dim="time" )
-            print(f"Saving Merged var {vname}: shape= {mvar.shape}, dims= {mvar.dims}")
-            filepath = self.variable_cache_filepath( vname, collection, **kwargs )
+            mvar: xa.DataArray = xa.concat( samples, dim="time" ) if (len(samples) > 1) else samples[0]
+            print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
+            filepath = self.variable_cache_filepath( dvar, collection, **kwargs )
             os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
             mvar.to_netcdf( filepath, format="NETCDF4" )
-            print(f" ** ** ** Saved variable {vname} to file= {filepath} in time = {time.time()-t1} sec")
-        print(f"  Completed processing in time = {(time.time()-t0)/60} min")
+            print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
+            print(f"  Completed processing in time = {(time.time()-t0)/60} min")
 
     def variable_cache_filepath(self, vname: str, collection: str, **kwargs ) -> str:
         filename = self.cache_file_template.format( varname=vname, year=kwargs['year'], month=kwargs['month'] )
