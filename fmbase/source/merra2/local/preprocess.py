@@ -117,7 +117,7 @@ class MERRADataProcessor:
                     else:
                         for dvar in dvars:
                             print(f" ** Processing dataset {len(dfiles)} files for dvar {collection}:{dvar}, month={month}, year={year}")
-                            self.process_subsample( collection, dvar, dfiles, year=year, month=month )
+                            self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
                     print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
 
 
@@ -156,7 +156,8 @@ class MERRADataProcessor:
 
 
     def subsample(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
-        varray: xa.DataArray = variable.rename(**self.dmap)
+        cmap = { cn0:cn1 for (cn0,cn1) in self.dmap.items() if cn0 in list(variable.coords.keys()) }
+        varray: xa.DataArray = variable.rename(**cmap)
         scoords = self.subsample_coords( varray )
         newvar: xa.DataArray = varray
         for cname, cval in scoords.items():
@@ -166,25 +167,27 @@ class MERRADataProcessor:
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
-        print( f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
-        t0 = time.time()
-        samples: List[xa.DataArray] = []
-        for file in sorted(files):
-            dset: xa.Dataset = xa.open_dataset(file)
-            dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
-            print( f"Processing var {dvar} from file {file}")
-            samples.append( self.subsample( dset.data_vars[dvar], dset_attrs ) )
-        if len(samples) == 0:
-            print( f"Found no files for variable {dvar} in collection {collection}")
-        else:
-            t1 = time.time()
-            mvar: xa.DataArray = xa.concat( samples, dim="time" ) if (len(samples) > 1) else samples[0]
-            print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
-            filepath = self.variable_cache_filepath( dvar, collection, **kwargs )
-            os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-            mvar.to_netcdf( filepath, format="NETCDF4" )
-            print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
-            print(f"  Completed processing in time = {(time.time()-t0)/60} min")
+        filepath = self.variable_cache_filepath(dvar, collection, **kwargs)
+        reprocess = kwargs.get( 'reprocess', True )
+        if (not os.path.exists(filepath)) or reprocess:
+            print(f" -----> open_collection[{collection}:{kwargs['year']}-{kwargs['month']}]>> {len(files)} files ", end="")
+            t0 = time.time()
+            samples: List[xa.DataArray] = []
+            for file in sorted(files):
+                dset: xa.Dataset = xa.open_dataset(file)
+                dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
+                print( f"Processing var {dvar} from file {file}")
+                samples.append( self.subsample( dset.data_vars[dvar], dset_attrs ) )
+            if len(samples) == 0:
+                print( f"Found no files for variable {dvar} in collection {collection}")
+            else:
+                t1 = time.time()
+                mvar: xa.DataArray = xa.concat( samples, dim="time" ) if (len(samples) > 1) else samples[0]
+                print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
+                os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
+                mvar.to_netcdf( filepath, format="NETCDF4" )
+                print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
+                print(f"  Completed processing in time = {(time.time()-t0)/60} min")
 
     def variable_cache_filepath(self, vname: str, collection: str, **kwargs ) -> str:
         filename = self.cache_file_template.format( varname=vname, year=kwargs['year'], month=kwargs['month'] )
