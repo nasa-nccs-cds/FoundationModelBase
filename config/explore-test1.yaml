@@ -1,4 +1,5 @@
 defaults:
   - platform: explore
-  - scenario: graphcast.2.37.1
+  - preprocess: graphcast.2.37.1
+  - model: graphcast.2.37.1
   - learning: demo1

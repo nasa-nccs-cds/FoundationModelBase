@@ -1,14 +1,9 @@
-
 import xarray as xa
 import numpy as np
-from omegaconf import DictConfig, OmegaConf
-import linecache
-from fmbase.util.ops import vrange
-from pathlib import Path
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import hydra, glob, sys, os, time
-from fmbase.io.nc4 import nc4_write_array
+from fmbase.source.merra2.base import MERRA2Base
 
 def year2date( year: Union[int,str] ) -> np.datetime64:
     return np.datetime64( int(year) - 1970, 'Y')
@@ -43,31 +38,19 @@ def xrng( v: xa.DataArray ):
 def srng( v: xa.DataArray ):
     return f"[{xmin(v):.5f}, {xmax(v):.5f}]"
 
-class MERRADataProcessor:
+class MERRADataProcessor(MERRA2Base):
 
     def __init__(self):
-        self.xext, self.yext = cfg().scenario.get('xext'), cfg().scenario.get('yext')
-        self.xres, self.yres = cfg().scenario.get('xres'), cfg().scenario.get('yres')
-        self.levels = np.array( list(cfg().scenario.get('levels')) ).sort()
-        self.dmap: Dict = cfg().scenario.dims
-        self.year_range = cfg().scenario.year_range
-        self.month_range = cfg().scenario.get('month_range',[0,12,1])
+        MERRA2Base.__init__( self )
+        self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
+        self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
+        self.levels = np.array( list(cfg().preprocess.get('levels')) ).sort()
+        self.dmap: Dict = cfg().preprocess.dims
+        self.year_range = cfg().preprocess.year_range
+        self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.file_template = cfg().platform.dataset_files
-        self.group = cfg().scenario.get('group','Nv')
-        self.freq = cfg().scenario.get('freq', 'tave3')
-        self.collections = cfg().scenario.collections
-        self.cache_file_template = "{varname}_{year}-{month}.nc"
-        self.cfgId = cfg().scenario.id
+        self.collections = cfg().preprocess.collections
         self._subsample_coords: Dict[str,np.ndarray] = None
-
-    @property
-    def data_dir(self):
-        return cfg().platform.dataset_root.format( root=cfg().platform.root )
-
-    @property
-    def results_dir(self):
-        base_dir = cfg().platform.processed.format( root=cfg().platform.root )
-        return  f"{base_dir}/data/merra2"
 
     def get_monthly_files(self, collection, year) -> Dict[int,List[str]]:
         months = list(range(*self.month_range))
@@ -81,27 +64,6 @@ class MERRADataProcessor:
             print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
             dset_files[month] = gfiles
         return dset_files
-
-    @classmethod
-    def load_asc(cls, filepath: str, flipud=True ) -> xa.DataArray:
-        raster_data: np.array = np.loadtxt( filepath, skiprows=6 )
-        if flipud: raster_data = np.flipud( raster_data )
-        header, varname = {}, Path(filepath).stem
-        for hline in range(6):
-            header_line = linecache.getline(filepath, hline).split(' ')
-            if len(header_line) > 1:
-                header[ header_line[0].strip() ] = str2num( header_line[1] )
-        nodata: float = header.get( 'NODATA_VALUE', -9999.0 )
-        raster_data[ raster_data==nodata ] = np.nan
-        cs, xlc, ylc, nx, ny = header['CELLSIZE'], header['XLLCORNER'], header['YLLCORNER'], header['NCOLS'], header['NROWS']
-        xc = np.array( [ xlc + cs*ix for ix in range(nx)] )
-        yc = np.array([ylc + cs * iy for iy in range(ny)])
-        header['_FillValue'] = np.nan
-        header['long_name'] = varname
-        header['varname'] = varname
-        header['xres'] = cs
-        header['yres'] = cs
-        return xa.DataArray( raster_data, name=varname, dims=['lat','lon'], coords=dict(lat=yc,lon=xc), attrs=header )
 
     def process(self, **kwargs):
         years = list(range( *self.year_range ))
@@ -118,13 +80,6 @@ class MERRADataProcessor:
                         for dvar in dvars:
                             self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
                     print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
-
-
-    def cache_files_exist(self, varnames: List[str], year: int, month: int ) -> bool:
-        for vname in varnames:
-            filepath = self.variable_cache_filepath(vname, year, month )
-            if not os.path.exists( filepath ): return False
-        return True
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
@@ -188,8 +143,4 @@ class MERRADataProcessor:
                 print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
                 print(f"  Completed processing in time = {(time.time()-t0)/60} min")
         else:
-            print( f" ** Skipping {collection}:{dvar} due to existence of processed file {filepath}")
-
-    def variable_cache_filepath(self, vname: str, collection: str, **kwargs ) -> str:
-        filename = self.cache_file_template.format( varname=vname, year=kwargs['year'], month=kwargs['month'] )
-        return f"{self.results_dir}/merra2/{self.cfgId}/{self.freq}_{collection}_{self.group}/{filename}"
+            print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")

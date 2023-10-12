@@ -1,9 +1,0 @@
-id: conus8
-cache_file_template: "{collection}_{varname}_{year}-{month}.nc"
-year_range: [2022,2023,1]
-month_range: [0,4,1]
-xext: [-130, -60]
-yext: [15, 55]
-dims: { lon: x, lat: y, lev: z }
-vars: [ TS,QV2M,T2M,EFLUX,HFLUX,SPEED,PREVTOT,PRECTOTCORR,ALBEDO,LWGNT,SWGNT,TAUTOT,CLDTOT,GRN,LAI,GWETPROF,GWETROOT,TSURF,TSAT,FRWLT,QINFIL,GHLAND,WCHANGE,ECHANGE,PRMC,RZMC,EVPSOIL,EVPTRNS,EVPINTR,EVLAND ]
-levels: [ 1000, 900, 800, 700 ]
