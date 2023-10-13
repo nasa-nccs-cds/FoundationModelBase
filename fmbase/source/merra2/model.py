@@ -33,10 +33,10 @@ class MERRA2DataInterface(MERRA2Base):
 						tsdata[f"{vname}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
 				else:
 					tsdata[vname] = varray
-		samples = xa.DataArray( data=list(tsdata.keys()), name="samples" )
-		print( f"Created coord {samples.name}: shape={samples.shape}, dims={samples.dims} data={list(tsdata.keys())}")
-		print(f" --> values={samples.values.tolist()}")
-		result = xa.concat( list(tsdata.values()), dim=samples )
-		return result.rename( {result.dims[0]: "samples"} ).transpose(..., "samples")
+		features = xa.DataArray( data=list(tsdata.keys()), name="features" )
+		print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims} data={list(tsdata.keys())}")
+		print(f" --> values={features.values.tolist()}")
+		result = xa.concat( list(tsdata.values()), dim=features )
+		return result.rename( {result.dims[0]: "features"} ).transpose(..., "features")
 
 
