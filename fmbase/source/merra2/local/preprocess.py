@@ -13,7 +13,7 @@ class MERRA2DataProcessor(MERRA2Base):
         MERRA2Base.__init__( self )
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
-        self.levels = get_levels_config( cfg().preprocess )
+        self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
         self.dmap: Dict = cfg().preprocess.dims
         self.year_range = cfg().preprocess.year_range
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
@@ -80,7 +80,7 @@ class MERRA2DataProcessor(MERRA2Base):
         return self._subsample_coords
 
 
-    def subsample(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
+    def subsample_1d(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
         cmap: Dict[str,str] = { cn0:cn1 for (cn0,cn1) in self.dmap.items() if cn0 in list(variable.coords.keys()) }
         varray: xa.DataArray = variable.rename(**cmap)
         scoords: Dict[str,np.ndarray] = self.subsample_coords( varray )
@@ -95,6 +95,16 @@ class MERRA2DataProcessor(MERRA2Base):
             newvar.attrs.update( global_attrs )
             newvar.attrs.update( varray.attrs )
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
+
+    def subsample(self, variable: xa.DataArray, global_attrs: Dict) -> xa.DataArray:
+        cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
+        varray: xa.DataArray = variable.rename(**cmap)
+        scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
+        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
+        newvar: xa.DataArray = varray.interp(**scoords, assume_sorted=True)
+        newvar.attrs.update(global_attrs)
+        newvar.attrs.update(varray.attrs)
+        return newvar.where(newvar != newvar.attrs['fmissing_value'], np.nan)
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
         filepath: str = self.variable_cache_filepath(dvar, collection, **kwargs)
