@@ -1,4 +1,2 @@
-year_range: [2000,2001,1]
-month_range: [0,4,1]
 vars: { 3d_asm: ['SLP', 'QV', 'T', 'U', 'V', 'H', 'OMEGA', 'CLOUD', 'QL'] }
 levels: [ 2, 10, 250, 500, 850, 1000 ]
