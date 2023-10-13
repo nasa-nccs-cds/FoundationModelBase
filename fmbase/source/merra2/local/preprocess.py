@@ -101,10 +101,12 @@ class MERRA2DataProcessor(MERRA2Base):
         varray: xa.DataArray = variable.rename(**cmap)
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
-        newvar: xa.DataArray = varray.interp(**scoords, assume_sorted=True)
+        zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
+        newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
-        return newvar.where(newvar != newvar.attrs['fmissing_value'], np.nan)
+        missing_value = newvar.attrs.pop('fmissing_value')
+        return newvar.where( newvar != missing_value, np.nan )
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
         filepath: str = self.variable_cache_filepath(dvar, collection, **kwargs)
