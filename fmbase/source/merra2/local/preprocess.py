@@ -4,47 +4,16 @@ from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import hydra, glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
+from fmbase.util.ops import get_levels_config, increasing
 
-def year2date( year: Union[int,str] ) -> np.datetime64:
-    return np.datetime64( int(year) - 1970, 'Y')
 
-def is_float( string: str ) -> bool:
-    try: float(string); return True
-    except ValueError:  return False
-
-def find_key( d: Dict, v: str ) -> str:
-    return list(d.keys())[ list(d.values()).index(v) ]
-
-def is_int( string: str ) -> bool:
-    try: int(string);  return True
-    except ValueError: return False
-
-def str2num( string: str ) -> Union[float,int,str]:
-    try: return int(string)
-    except ValueError:
-        try: return float(string)
-        except ValueError:
-            return string
-
-def xmin( v: xa.DataArray ):
-    return v.min(skipna=True).values.tolist()
-
-def xmax( v: xa.DataArray ):
-    return v.max(skipna=True).values.tolist()
-
-def xrng( v: xa.DataArray ):
-    return [ xmin(v), xmax(v) ]
-
-def srng( v: xa.DataArray ):
-    return f"[{xmin(v):.5f}, {xmax(v):.5f}]"
-
-class MERRADataProcessor(MERRA2Base):
+class MERRA2DataProcessor(MERRA2Base):
 
     def __init__(self):
         MERRA2Base.__init__( self )
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
-        self.levels = np.array( list(cfg().preprocess.get('levels')) ).sort()
+        self.levels = get_levels_config( cfg().preprocess )
         self.dmap: Dict = cfg().preprocess.dims
         self.year_range = cfg().preprocess.year_range
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
@@ -88,7 +57,7 @@ class MERRADataProcessor(MERRA2Base):
         dset.close()
         return covnames
 
-    def subsample_coords(self, dvar: xa.DataArray ):
+    def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
         if self._subsample_coords is None:
             self._subsample_coords = {} if self.levels is None else dict(z=self.levels)
             if self.xres is not None:
@@ -110,19 +79,23 @@ class MERRADataProcessor(MERRA2Base):
 
 
     def subsample(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
-        cmap = { cn0:cn1 for (cn0,cn1) in self.dmap.items() if cn0 in list(variable.coords.keys()) }
+        cmap: Dict[str,str] = { cn0:cn1 for (cn0,cn1) in self.dmap.items() if cn0 in list(variable.coords.keys()) }
         varray: xa.DataArray = variable.rename(**cmap)
-        scoords = self.subsample_coords( varray )
+        scoords: Dict[str,np.ndarray] = self.subsample_coords( varray )
         newvar: xa.DataArray = varray
+        print(f" **** subsample {variable.name}")
         for cname, cval in scoords.items():
-            newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=(cname!='z') )
+            if cname == 'z':
+                print(f" >> zdata: {varray.coords['z'].values.tolist()}")
+                print(f" >> zconf: {cval.tolist()}")
+            newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=increasing(cval) )
             newvar.attrs.update( global_attrs )
             newvar.attrs.update( varray.attrs )
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
-        filepath = self.variable_cache_filepath(dvar, collection, **kwargs)
-        reprocess = kwargs.pop( 'reprocess', True )
+        filepath: str = self.variable_cache_filepath(dvar, collection, **kwargs)
+        reprocess: bool = kwargs.pop( 'reprocess', True )
         if (not os.path.exists(filepath)) or reprocess:
             print(f" ** Processing variable {dvar} in collection {collection}, month={kwargs['month']}, year={kwargs['year']}: {len(files)} files")
             t0 = time.time()

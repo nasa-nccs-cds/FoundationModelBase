@@ -5,17 +5,13 @@ from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import hydra, glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
+from fmbase.util.ops import get_levels_config
 
 class MERRA2DataInterface(MERRA2Base):
 
 	def __init__(self):
 		MERRA2Base.__init__(self)
-		levs = cfg().model.get('levels')
-		self.levels: np.array = None
-		if levs is not None:
-			self.levels = np.array(levs)
-			self.levels.sort()
-		print( f"MERRA2DataInterface: levs = {levs}, levels={self.levels}")
+		self.levels: np.ndarray = get_levels_config(cfg().model)
 		self.vlist: Dict[str, List] = cfg().model.get('vars')
 
 	def load( self, dvar: str, collection: str, year, month, **kwargs  ) -> xa.DataArray:      # year: int, month: int

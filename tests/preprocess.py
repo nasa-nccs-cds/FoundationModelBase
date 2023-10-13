@@ -1,6 +1,6 @@
-from fmbase.source.merra2.local.preprocess import MERRADataProcessor
+from fmbase.source.merra2.local.preprocess import MERRA2DataProcessor
 from fmbase.util.config import configure
 configure( 'explore-test1' )
 
-reader = MERRADataProcessor()
+reader = MERRA2DataProcessor()
 reader.process( reprocess=False )

@@ -59,3 +59,44 @@ def get_obs_species() -> List[str]:
 
 def obs_dates_for_cov_date( covdate: np.datetime64 ) -> List[np.datetime64]:
     return [ covdate ]
+
+def is_float( string: str ) -> bool:
+    try: float(string); return True
+    except ValueError:  return False
+
+def find_key( d: Dict, v: str ) -> str:
+    return list(d.keys())[ list(d.values()).index(v) ]
+
+def is_int( string: str ) -> bool:
+    try: int(string);  return True
+    except ValueError: return False
+
+def str2num( string: str ) -> Union[float,int,str]:
+    try: return int(string)
+    except ValueError:
+        try: return float(string)
+        except ValueError:
+            return string
+
+def xmin( v: xa.DataArray ):
+    return v.min(skipna=True).values.tolist()
+
+def xmax( v: xa.DataArray ):
+    return v.max(skipna=True).values.tolist()
+
+def xrng( v: xa.DataArray ):
+    return [ xmin(v), xmax(v) ]
+
+def srng( v: xa.DataArray ):
+    return f"[{xmin(v):.5f}, {xmax(v):.5f}]"
+
+def get_levels_config( config: Dict ) -> Optional[np.ndarray]:
+    levs = config.get('levels')
+    if levs is not None:
+        levels = np.array(levs)
+        levels.sort()
+        return levels
+
+def increasing( data: np.ndarray ) -> bool:
+    xl = data.tolist()
+    return xl[-1] > xl[0]
