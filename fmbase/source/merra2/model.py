@@ -21,18 +21,20 @@ class MERRA2DataInterface(MERRA2Base):
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:
 		tsdata = {}
+		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in self.vlist.items():
-			for var in vlist:
-				varray: xa.DataArray = self.load(var, collection, year, month, **kwargs)
-				print( f"load_timestep({month}/{year}): var={varray.name}, shape={varray.shape}, dims={varray.dims}")
+			for vname in vlist:
+				varray: xa.DataArray = self.load(vname, collection, year, month, **kwargs)
+				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}")
 				if 'z' in varray.dims:
 					levs = varray.coords['z'] if self.levels is None else self.levels
 					for lev in levs:
-						tsdata[f"{var}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
+						tsdata[f"{vname}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
 				else:
-					tsdata[var] = varray
-		samples = xa.DataArray( data=tsdata.keys(), name="samples" )
-		print( f"Created coord {samples.name}: shape={samples.shape}, dims={samples.dims} vals={samples.values.tolist()}")
-		return xa.concat( tsdata.values(), dim=samples )
+					tsdata[vname] = varray
+		samples = xa.DataArray( data=list(tsdata.keys()), name="samples" )
+		print( f"Created coord {samples.name}: shape={samples.shape}, dims={samples.dims} data={list(tsdata.keys())}")
+		print(f" --> values={samples.values.tolist()}")
+		return xa.concat( list(tsdata.values()), dim=samples )
 
 
