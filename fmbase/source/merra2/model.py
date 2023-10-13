@@ -29,7 +29,6 @@ class MERRA2DataInterface(MERRA2Base):
 					levs = varray.coords['z'] if self.levels is None else self.levels
 					for lev in levs:
 						tsdata[f"{var}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
-
 				else:
 					tsdata[var] = varray
 		samples = xa.DataArray( data=tsdata.keys(), name="samples" )
