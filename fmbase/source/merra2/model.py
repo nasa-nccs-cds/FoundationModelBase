@@ -20,13 +20,19 @@ class MERRA2DataInterface(MERRA2Base):
 		return variable
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:
-		tsdata = []
+		tsdata = {}
 		for (collection,vlist) in self.vlist.items():
 			for var in vlist:
 				varray: xa.DataArray = self.load(var, collection, year, month, **kwargs)
 				print( f"load_timestep({month}/{year}): var={varray.name}, shape={varray.shape}, dims={varray.dims}")
-				tsdata.append( varray )
-		return None
-#		return xa.concat(tsdata, dim="features")
+				if 'z' in varray.dims:
+					levs = varray.coords['z'] if self.levels is None else self.levels
+					for lev in levs:
+						tsdata[f"{var}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
+
+				else:
+					tsdata[var] = varray
+		samples = xa.DataArray( data=tsdata.keys(), name="samples" )
+		return xa.concat( tsdata.values(), dim=samples )
 
 
