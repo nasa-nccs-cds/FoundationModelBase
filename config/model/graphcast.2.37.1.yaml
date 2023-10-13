@@ -1,2 +1,2 @@
 vars: { 3d_asm: ['SLP', 'QV', 'T', 'U', 'V', 'H', 'OMEGA', 'CLOUD', 'QL'] }
-levels: [ 2, 10, 250, 500, 850, 1000 ]
+level_range: [0,73,10]

@@ -96,6 +96,11 @@ def get_levels_config( config: Dict ) -> Optional[np.ndarray]:
         levels = np.array(levs)
         levels.sort()
         return levels
+    levr = config.get('level_range')
+    if levr is not None:
+        levels = np.arange(*levr)
+        return levels
+
 
 def increasing( data: np.ndarray ) -> bool:
     xl = data.tolist()
