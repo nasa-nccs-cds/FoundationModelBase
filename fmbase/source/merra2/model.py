@@ -36,6 +36,7 @@ class MERRA2DataInterface(MERRA2Base):
 		samples = xa.DataArray( data=list(tsdata.keys()), name="samples" )
 		print( f"Created coord {samples.name}: shape={samples.shape}, dims={samples.dims} data={list(tsdata.keys())}")
 		print(f" --> values={samples.values.tolist()}")
-		return xa.concat( list(tsdata.values()), dim=samples )
+		result = xa.concat( list(tsdata.values()), dim=samples )
+		return result.rename( {result.dim[0]: "samples"} )
 
 
