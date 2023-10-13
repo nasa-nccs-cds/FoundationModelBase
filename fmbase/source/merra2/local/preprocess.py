@@ -59,7 +59,9 @@ class MERRA2DataProcessor(MERRA2Base):
 
     def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
         if self._subsample_coords is None:
-            self._subsample_coords = {} if self.levels is None else dict(z=self.levels)
+            self._subsample_coords = {}
+            if (self.levels is not None) and ('z' in dvar.dims):
+                self._subsample_coords['z'] = self.levels
             if self.xres is not None:
                 if self.xext is  None:
                     xc0 = dvar.coords['x'].values
@@ -83,12 +85,13 @@ class MERRA2DataProcessor(MERRA2Base):
         varray: xa.DataArray = variable.rename(**cmap)
         scoords: Dict[str,np.ndarray] = self.subsample_coords( varray )
         newvar: xa.DataArray = varray
-        print(f" **** subsample {variable.name}")
+        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}")
         for cname, cval in scoords.items():
             if cname == 'z':
-                print(f" >> zdata: {varray.coords['z'].values.tolist()}")
+                newvar: xa.DataArray = newvar.interp(**{cname: cval}, assume_sorted=increasing(cval))
+                print(f" >> zdata: {varray.coords['z'].values.tolist()}" )
                 print(f" >> zconf: {cval.tolist()}")
-            newvar: xa.DataArray = newvar.interp( **{cname:cval}, assume_sorted=increasing(cval) )
+                print(f" >> znewv: {newvar.coords['z'].values.tolist()}" )
             newvar.attrs.update( global_attrs )
             newvar.attrs.update( varray.attrs )
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
