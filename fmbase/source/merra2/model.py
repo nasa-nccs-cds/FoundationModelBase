@@ -12,6 +12,7 @@ class MERRA2DataInterface(MERRA2Base):
 		MERRA2Base.__init__(self)
 		levs = cfg().model.get('levels')
 		self.levels: np.array = None if levs is None else np.array(list(levs)).sort()
+		print( f"MERRA2DataInterface: levs = {levs}, levels={self.levels}")
 		self.vlist: Dict[str, List] = cfg().model.get('vars')
 
 	def load( self, dvar: str, collection: str, year, month, **kwargs  ) -> xa.DataArray:      # year: int, month: int
@@ -25,7 +26,7 @@ class MERRA2DataInterface(MERRA2Base):
 		for (collection,vlist) in self.vlist.items():
 			for vname in vlist:
 				varray: xa.DataArray = self.load(vname, collection, year, month, **kwargs)
-				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}")
+				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={self.levels}")
 				if 'z' in varray.dims:
 					levs: List[str] = varray.coords['z'].values.tolist() if self.levels is None else self.levels
 					for lev in levs:
