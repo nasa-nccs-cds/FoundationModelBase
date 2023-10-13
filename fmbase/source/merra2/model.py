@@ -30,8 +30,8 @@ class MERRA2DataInterface(MERRA2Base):
 			for vname in vlist:
 				varray: xa.DataArray = self.load(vname, collection, year, month, **kwargs)
 				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={self.levels}")
-				print( f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 				if 'z' in varray.dims:
+					print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 					levs: List[str] = varray.coords['z'].values.tolist() if self.levels is None else self.levels
 					for lev in levs:
 						tsdata[f"{vname}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
