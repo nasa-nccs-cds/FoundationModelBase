@@ -1,7 +1,7 @@
 
 # Foundation Model Base
 
-Framework for feeding data from various sources to FoundationModel/DigitalTwin training and inference processes.
+Framework for providing reanalysis data to FoundationModel/DigitalTwin training and inference processes.
 
 ## Objectives
 
