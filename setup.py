@@ -6,7 +6,7 @@ from setuptools import setup
 description =  "Framework for providing reanalysis data to FoundationModel/DigitalTwin training and inference processes."
 
 setup(
-    name="FoundationModelBase",
+    name="fmbase",
     version="0.1",
     description=description,
     long_description=description,
