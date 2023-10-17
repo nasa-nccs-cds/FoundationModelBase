@@ -17,45 +17,43 @@ class MERRA2DataProcessor(MERRA2Base):
         self.dmap: Dict = cfg().preprocess.dims
         self.year_range = cfg().preprocess.year_range
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
+        self.timestep = cfg().preprocess.timestep
         self.file_template = cfg().platform.dataset_files
-        self.collections = cfg().preprocess.collections
+        self.vars: Dict[str,List[str]] = cfg().preprocess.vars
         self._subsample_coords: Dict[str,np.ndarray] = None
 
-    def get_monthly_files(self, collection, year) -> Dict[int,List[str]]:
-        months = list(range(*self.month_range))
+    def get_monthly_files(self, year) -> Dict[ Tuple[str,int], List[str] ]:
+        months: List[int] = list(range(*self.month_range))
         assert "{year}" in self.file_template, "{year} field missing from platform.cov_files parameter"
-        dset_files = {}
+        dset_files: Dict[ Tuple[str,int], List[str] ] = {}
         assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
         for month in months:
-            dset_template = self.file_template.format(collection=collection, year=year, month=f"{month+1:0>2}", group=self.group, freq=self.freq)
-            dset_paths = f"{self.data_dir}/{dset_template}"
-            gfiles = glob.glob(dset_paths)
-            print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
-            dset_files[month] = gfiles
+            for collection, vlist in self.vars.items():
+                dset_template: str = self.file_template.format( collection=collection, year=year, month=f"{month+1:0>2}" )
+                dset_paths: str = f"{self.data_dir}/{dset_template}"
+                gfiles: List[str] = glob.glob(dset_paths)
+                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
+                dset_files[(collection,month)] = gfiles
         return dset_files
 
     def process(self, **kwargs):
         years = list(range( *self.year_range ))
-        for collection in self.collections:
-            print(f"\n --------------- Processing collection {collection}  --------------- ")
-            for year in years:
-                t0 = time.time()
-                dset_files: Dict[int,List[str]] = self.get_monthly_files( collection, year )
-                for month, dfiles in dset_files.items():
-                    dvars: List[str] = self.get_varnames( dfiles[0] )
-                    if len( dvars ) == 0:
-                        print(f" ** No dvars in this collection" )
-                    else:
-                        for dvar in dvars:
-                            self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
-                    print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
+        for year in years:
+            t0 = time.time()
+            dset_files: Dict[ Tuple[str,int], List[str] ] = self.get_monthly_files( year )
+            for (collection,month), dfiles in dset_files.items():
+                dvars: List[str] = self.get_varnames( dfiles[0] )
+                if len( dvars ) == 0:
+                    print(f" ** No dvars in this collection" )
+                else:
+                    for dvar in dvars:
+                        self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
+                print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
-        dset: xa.Dataset = xa.open_dataset(dset_file)
-        covnames = list(dset.data_vars.keys())
-        dset.close()
-        return covnames
+        with xa.open_dataset(dset_file) as dset:
+            return list(dset.data_vars.keys())
 
     def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
         if self._subsample_coords is None:
@@ -124,7 +122,8 @@ class MERRA2DataProcessor(MERRA2Base):
                 print( f"Found no files for variable {dvar} in collection {collection}")
             else:
                 t1 = time.time()
-                mvar: xa.DataArray = xa.concat( samples, dim="time" ) if (len(samples) > 1) else samples[0]
+                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" ).resample(time=f"{self.timestep}H").mean()
+                else:                 mvar: xa.DataArray = samples[0]
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
                 mvar.to_netcdf( filepath, format="NETCDF4" )

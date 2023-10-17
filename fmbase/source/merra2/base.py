@@ -14,8 +14,6 @@ class MERRA2Base:
 
 	def __init__(self):
 		self.cache_file_template = "{varname}_{year}-{month}.nc"
-		self.group = cfg().preprocess.get('group', 'Nv')
-		self.freq = cfg().preprocess.get('freq', 'tave3')
 		self.cfgId = cfg().preprocess.id
 
 	@property
@@ -29,4 +27,4 @@ class MERRA2Base:
 
 	def variable_cache_filepath(self, vname: str, collection: str, **kwargs) -> str:
 		filename = self.cache_file_template.format(varname=vname, year=kwargs['year'], month=kwargs['month'])
-		return f"{self.results_dir}/merra2/{self.cfgId}/{self.freq}_{collection}_{self.group}/{filename}"
+		return f"{self.results_dir}/merra2/{self.cfgId}/{collection}/{filename}"

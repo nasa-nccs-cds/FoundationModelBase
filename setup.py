@@ -1,7 +1,7 @@
 
 """Module setuptools script."""
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 description =  "Framework for providing reanalysis data to FoundationModel/DigitalTwin training and inference processes."
 
@@ -14,7 +14,7 @@ setup(
     license="Apache License, Version 2.0",
     keywords="Foundation Model Weather Climate",
     url="https://github.com/nasa-nccs-cds/FoundationModelBase.git",
-    packages=["fmbase"],
+    packages=find_packages(),
     install_requires=[ "pydap", "numpy", "xarray", "dask", "matplotlib", "scipy", "netCDF4", "hydra-core"],
     classifiers=[
         "Development Status :: 3 - Alpha",
