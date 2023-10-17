@@ -14,12 +14,12 @@ class MERRA2DataProcessor(MERRA2Base):
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
         self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
-        self.dmap: Dict = cfg().preprocess.dims
-        self.year_range = cfg().preprocess.year_range
+        self.tstep = cfg().preprocess.tstep
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
-        self.timestep = cfg().preprocess.timestep
+        self.year_range = cfg().preprocess.year_range
+        self.vars: Dict[str, List[str]] = cfg().preprocess.vars
+        self.dmap: Dict = cfg().preprocess.dims
         self.file_template = cfg().platform.dataset_files
-        self.vars: Dict[str,List[str]] = cfg().preprocess.vars
         self._subsample_coords: Dict[str,np.ndarray] = None
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], List[str] ]:
@@ -122,7 +122,7 @@ class MERRA2DataProcessor(MERRA2Base):
                 print( f"Found no files for variable {dvar} in collection {collection}")
             else:
                 t1 = time.time()
-                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" ).resample(time=f"{self.timestep}H").mean()
+                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" ).resample(time=f"{self.tstep}H").mean()
                 else:                 mvar: xa.DataArray = samples[0]
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
