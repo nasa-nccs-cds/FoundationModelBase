@@ -7,7 +7,7 @@ yres: 2.0
 dims: { lon: x, lat: y, lev: z }
 vars: { inst3_3d_asm_Np: ['T', 'U', 'V', 'OMEGA', 'H', 'QV' ],
         inst1_2d_asm_Nx: ['SLP', 'T2M', 'V10', 'U10', 'TQI', 'TQL', 'TQV'],
-        const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'],
+#        const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'],
         tavg1_2d_int_Nx: ['PRECLS', 'SWNETTOA'] }
 
 # level_range: [0,73,10]
