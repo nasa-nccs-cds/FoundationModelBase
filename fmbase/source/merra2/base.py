@@ -27,4 +27,4 @@ class MERRA2Base:
 
 	def variable_cache_filepath(self, vname: str, collection: str, **kwargs) -> str:
 		filename = self.cache_file_template.format(varname=vname, year=kwargs['year'], month=kwargs['month'])
-		return f"{self.results_dir}/merra2/{self.cfgId}/{collection}/{filename}"
+		return f"{self.results_dir}/{self.cfgId}/{collection}/{filename}"

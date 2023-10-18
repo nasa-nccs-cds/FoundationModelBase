@@ -3,4 +3,4 @@ from fmbase.util.config import configure
 configure( 'explore-test1' )
 
 reader = MERRA2DataProcessor()
-reader.process( reprocess=True )
+reader.process( reprocess=False )
