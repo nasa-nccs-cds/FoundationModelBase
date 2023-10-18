@@ -109,9 +109,11 @@ class MERRA2DataProcessor(MERRA2Base):
         newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
-        print( f" ----> ATTRS: {list(newvar.attrs.keys())}" )
-        missing_value = newvar.attrs.pop('fmissing_value')
-        return newvar.where( newvar != missing_value, np.nan )
+        for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
+            if missing in newvar.attrs:
+                missing_value = newvar.attrs.pop('fmissing_value')
+                return newvar.where( newvar != missing_value, np.nan )
+        return newvar
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
         filepath: str = self.variable_cache_filepath(dvar, collection, **kwargs)
