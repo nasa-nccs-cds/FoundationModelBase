@@ -122,7 +122,7 @@ class MERRA2DataProcessor(MERRA2Base):
                 print( f"Found no files for variable {dvar} in collection {collection}")
             else:
                 t1 = time.time()
-                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" ).resample(time=f"{self.tstep}H").mean()
+                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" ).resample(time=self.tstep).mean()
                 else:                 mvar: xa.DataArray = samples[0]
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
