@@ -18,7 +18,6 @@ class MERRA2DataProcessor(MERRA2Base):
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.year_range = cfg().preprocess.year_range
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
-        self.constants: Dict[str, List[str]] = cfg().preprocess.constants
         self.dmap: Dict = cfg().preprocess.dims
         self.var_file_template = cfg().platform.dataset_files
         self._subsample_coords: Dict[str,np.ndarray] = None
