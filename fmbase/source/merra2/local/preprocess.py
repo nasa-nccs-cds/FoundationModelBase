@@ -18,23 +18,29 @@ class MERRA2DataProcessor(MERRA2Base):
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.year_range = cfg().preprocess.year_range
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
+        self.constants: Dict[str, List[str]] = cfg().preprocess.constants
         self.dmap: Dict = cfg().preprocess.dims
-        self.file_template = cfg().platform.dataset_files
+        self.var_file_template = cfg().platform.dataset_files
+        self.const_file_template = cfg().platform.constant_file
         self._subsample_coords: Dict[str,np.ndarray] = None
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
-        assert "{year}" in self.file_template, "{year} field missing from platform.cov_files parameter"
+        assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = {}
-        assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
+        assert "{month}" in self.var_file_template, "{month} field missing from platform.cov_files parameter"
         for month in months:
             for collection, vlist in self.vars.items():
-                dset_template: str = self.file_template.format( collection=collection, year=year, month=f"{month+1:0>2}" )
+                dset_template: str = self.var_file_template.format( collection=collection, year=year, month=f"{month + 1:0>2}")
                 dset_paths: str = f"{self.data_dir}/{dset_template}"
                 gfiles: List[str] = glob.glob(dset_paths)
-                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
+                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={self.data_dir}")
                 dset_files[(collection,month)] = (gfiles, vlist)
         return dset_files
+
+    def get_constant_file(self, collection ) -> str:
+        file_template: str = self.const_file_template.format(collection=collection)
+        return f"{self.data_dir}/{file_template}"
 
     def process(self, **kwargs):
         years = list(range( *self.year_range ))
@@ -45,6 +51,10 @@ class MERRA2DataProcessor(MERRA2Base):
                 for dvar in dvars:
                     self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
                 print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} min")
+        for collection, cvars in self.constants.items():
+            cfile = self.get_constant_file(collection)
+            for cvar in cvars:
+                self.process_subsample(collection, cvar, [cfile], **kwargs)
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
@@ -111,7 +121,7 @@ class MERRA2DataProcessor(MERRA2Base):
             samples: List[xa.DataArray] = []
             for file in sorted(files):
                 dset: xa.Dataset = xa.open_dataset(file)
-                dset_attrs = dict( collection=os.path.basename(collection), **dset.attrs, **kwargs )
+                dset_attrs = dict( collection=collection, **dset.attrs, **kwargs )
                 print( f"Processing var {dvar} from file {file}")
                 samples.append( self.subsample( dset.data_vars[dvar], dset_attrs ) )
             if len(samples) == 0:

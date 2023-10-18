@@ -13,7 +13,6 @@ from fmbase.io.nc4 import nc4_write_array
 class MERRA2Base:
 
 	def __init__(self):
-		self.cache_file_template = "{varname}_{year}-{month}.nc"
 		self.cfgId = cfg().preprocess.id
 
 	@property
@@ -26,5 +25,8 @@ class MERRA2Base:
 		return f"{base_dir}/data/merra2"
 
 	def variable_cache_filepath(self, vname: str, collection: str, **kwargs) -> str:
-		filename = self.cache_file_template.format(varname=vname, year=kwargs['year'], month=kwargs['month'])
+		if "year" in kwargs:
+			if "month" in kwargs:   filename = "{varname}_{year}-{month}.nc".format( varname=vname, **kwargs )
+			else:                   filename = "{varname}_{year}.nc".format(varname=vname, **kwargs)
+		else:	                    filename = "{varname}.nc".format(varname=vname, **kwargs)
 		return f"{self.results_dir}/{self.cfgId}/{collection}/{filename}"

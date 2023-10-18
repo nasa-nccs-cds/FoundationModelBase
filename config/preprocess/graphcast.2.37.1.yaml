@@ -7,8 +7,8 @@ yres: 2.0
 dims: { lon: x, lat: y, lev: z }
 vars: { inst3_3d_asm_Np: ['T', 'U', 'V', 'OMEGA', 'H', 'QV' ],
         inst1_2d_asm_Nx: ['SLP', 'T2M', 'V10M', 'U10M', 'TQI', 'TQL', 'TQV'],
-#        const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'],
         tavg1_2d_int_Nx: ['PRECLS', 'SWNETTOA'] }
+constants: { const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'], }
 
 # level_range: [0,73,10]
 # gcast plevels: [ 1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000 ]
