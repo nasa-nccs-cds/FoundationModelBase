@@ -22,10 +22,10 @@ class MERRA2DataProcessor(MERRA2Base):
         self.file_template = cfg().platform.dataset_files
         self._subsample_coords: Dict[str,np.ndarray] = None
 
-    def get_monthly_files(self, year) -> Dict[ Tuple[str,int], List[str] ]:
+    def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
         assert "{year}" in self.file_template, "{year} field missing from platform.cov_files parameter"
-        dset_files: Dict[ Tuple[str,int], List[str] ] = {}
+        dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = {}
         assert "{month}" in self.file_template, "{month} field missing from platform.cov_files parameter"
         for month in months:
             for collection, vlist in self.vars.items():
@@ -33,22 +33,18 @@ class MERRA2DataProcessor(MERRA2Base):
                 dset_paths: str = f"{self.data_dir}/{dset_template}"
                 gfiles: List[str] = glob.glob(dset_paths)
                 print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.file_template}, root dir ={self.data_dir}" )
-                dset_files[(collection,month)] = gfiles
+                dset_files[(collection,month)] = (gfiles, vlist)
         return dset_files
 
     def process(self, **kwargs):
         years = list(range( *self.year_range ))
         for year in years:
-            t0 = time.time()
-            dset_files: Dict[ Tuple[str,int], List[str] ] = self.get_monthly_files( year )
-            for (collection,month), dfiles in dset_files.items():
-                dvars: List[str] = self.get_varnames( dfiles[0] )
-                if len( dvars ) == 0:
-                    print(f" ** No dvars in this collection" )
-                else:
-                    for dvar in dvars:
-                        self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
-                print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} ")
+            dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = self.get_monthly_files( year )
+            for (collection,month), (dfiles,dvars) in dset_files.items():
+                t0 = time.time()
+                for dvar in dvars:
+                    self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
+                print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} min")
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
