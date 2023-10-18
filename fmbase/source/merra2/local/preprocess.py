@@ -20,6 +20,7 @@ class MERRA2DataProcessor(MERRA2Base):
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
         self.var_file_template = cfg().platform.dataset_files
+        self.const_file_template = cfg().constant_file
         self._subsample_coords: Dict[str,np.ndarray] = None
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
@@ -29,7 +30,8 @@ class MERRA2DataProcessor(MERRA2Base):
         assert "{month}" in self.var_file_template, "{month} field missing from platform.cov_files parameter"
         for month in months:
             for collection, vlist in self.vars.items():
-                dset_template: str = self.var_file_template.format( collection=collection, year=year, month=f"{month + 1:0>2}")
+                if collection.startswith("const"): dset_template: str = self.const_file_template.format( collection=collection )
+                else:                              dset_template: str = self.var_file_template.format(   collection=collection, year=year, month=f"{month + 1:0>2}")
                 dset_paths: str = f"{self.data_dir}/{dset_template}"
                 gfiles: List[str] = glob.glob(dset_paths)
                 print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={self.data_dir}")
@@ -96,7 +98,7 @@ class MERRA2DataProcessor(MERRA2Base):
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
-        newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
+        newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )   # TODO: slice instead of interp if variable has monthly timesteps
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
         for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
