@@ -109,6 +109,7 @@ class MERRA2DataProcessor(MERRA2Base):
         newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
+        print( f" ----> ATTRS: {list(newvar.attrs.keys())}" )
         missing_value = newvar.attrs.pop('fmissing_value')
         return newvar.where( newvar != missing_value, np.nan )
 
