@@ -116,7 +116,7 @@ class MERRA2DataProcessor(MERRA2Base):
         filepath: str = self.variable_cache_filepath(dvar, collection, **kwargs)
         reprocess: bool = kwargs.pop( 'reprocess', True )
         if (not os.path.exists(filepath)) or reprocess:
-            print(f" ** Processing variable {dvar} in collection {collection}, month={kwargs['month']}, year={kwargs['year']}: {len(files)} files")
+            print(f" ** Processing variable {dvar} in collection {collection}, args={kwargs}: {len(files)} files")
             t0 = time.time()
             samples: List[xa.DataArray] = []
             for file in sorted(files):
