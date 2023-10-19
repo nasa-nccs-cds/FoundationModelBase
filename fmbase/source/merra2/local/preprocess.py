@@ -98,12 +98,11 @@ class MERRA2DataProcessor(MERRA2Base):
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
-        print(f" >>  global_attrs: {global_attrs}")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
-        if (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12):
-            newvar: xa.DataArray = varray[0]
-        else:
-            newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
+        monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
+        if   variable.shape[0] == 1:    newvar: xa.DataArray = varray
+        elif monthly:                   newvar: xa.DataArray = varray.isel( time=global_attrs['month'] )
+        else:                           newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
         print( f" >> NEW: shape={newvar.shape}, dims={newvar.dims}, attrs={newvar.attrs}")
