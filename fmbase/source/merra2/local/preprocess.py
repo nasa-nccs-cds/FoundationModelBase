@@ -95,15 +95,18 @@ class MERRA2DataProcessor(MERRA2Base):
     def subsample(self, variable: xa.DataArray, global_attrs: Dict) -> xa.DataArray:
         cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
         varray: xa.DataArray = variable.rename(**cmap)
-        taxis: xa.DataArray = variable.coords['time']
+        tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
-        print(f" >> TIME: shape={taxis.shape}, dims={taxis.dims}, attrs={taxis.attrs}")
+        print(f" >>  global_attrs: {global_attrs}")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
-        print( f" >> NEW: shape={varray.shape}, dims={varray.dims}, attrs={variable.attrs}")
-        newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )   # TODO: slice instead of interp if variable has monthly timesteps
+        if (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12):
+            newvar: xa.DataArray = varray[0]
+        else:
+            newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
+        print( f" >> NEW: shape={newvar.shape}, dims={newvar.dims}, attrs={newvar.attrs}")
         for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
             if missing in newvar.attrs:
                 missing_value = newvar.attrs.pop('fmissing_value')
