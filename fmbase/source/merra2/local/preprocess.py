@@ -14,7 +14,7 @@ class MERRA2DataProcessor(MERRA2Base):
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
         self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
-        self.tstep = cfg().preprocess.tstep
+        self.tstep = str(cfg().preprocess.tstep).lower()
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.year_range = cfg().preprocess.year_range
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
@@ -98,11 +98,15 @@ class MERRA2DataProcessor(MERRA2Base):
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
+
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
+        varray = varray.interp(**scoords, assume_sorted=zsorted)
+
         monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
         if   variable.shape[0] == 1:    newvar: xa.DataArray = varray
         elif monthly:                   newvar: xa.DataArray = varray.isel( time=global_attrs['month'] )
-        else:                           newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )
+        else:                           newvar: xa.DataArray = varray.resample(time=self.tstep).mean()
+
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
         print( f" >> NEW: shape={newvar.shape}, dims={newvar.dims}, attrs={newvar.attrs}")
@@ -128,7 +132,7 @@ class MERRA2DataProcessor(MERRA2Base):
                 print( f"Found no files for variable {dvar} in collection {collection}")
             else:
                 t1 = time.time()
-                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" ).resample(time=self.tstep).mean()
+                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" )
                 else:                 mvar: xa.DataArray = samples[0]
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
