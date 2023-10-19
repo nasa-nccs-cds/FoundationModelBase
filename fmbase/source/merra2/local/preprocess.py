@@ -14,7 +14,7 @@ class MERRA2DataProcessor(MERRA2Base):
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
         self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
-        self.tstep = str(cfg().preprocess.tstep).lower()
+        self.tstep = cfg().preprocess.tstep
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.year_range = cfg().preprocess.year_range
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
