@@ -98,6 +98,7 @@ class MERRA2DataProcessor(MERRA2Base):
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
+        print( f" >> NEW: shape={varray.shape}, dims={varray.dims}, attrs={variable.attrs}")
         newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )   # TODO: slice instead of interp if variable has monthly timesteps
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
