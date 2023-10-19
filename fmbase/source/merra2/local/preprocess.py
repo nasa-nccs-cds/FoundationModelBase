@@ -95,8 +95,10 @@ class MERRA2DataProcessor(MERRA2Base):
     def subsample(self, variable: xa.DataArray, global_attrs: Dict) -> xa.DataArray:
         cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
         varray: xa.DataArray = variable.rename(**cmap)
+        taxis: xa.DataArray = variable.coords['time']
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
+        print(f" >> TIME: shape={taxis.shape}, dims={taxis.dims}, attrs={taxis.attrs}")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         print( f" >> NEW: shape={varray.shape}, dims={varray.dims}, attrs={variable.attrs}")
         newvar: xa.DataArray = varray.interp( **scoords, assume_sorted=zsorted )   # TODO: slice instead of interp if variable has monthly timesteps
