@@ -20,7 +20,7 @@ class MERRA2DataProcessor(MERRA2Base):
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
         self.var_file_template = cfg().platform.dataset_files
-        self.const_file_template = cfg().constant_file
+        self.const_file_template = cfg().platform.constant_file
         self._subsample_coords: Dict[str,np.ndarray] = None
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
