@@ -14,8 +14,8 @@ class MERRA2DataInterface(MERRA2Base):
 		self.levels: np.ndarray = get_levels_config(cfg().model)
 		self.vlist: Dict[str, List] = cfg().model.get('vars')
 
-	def load( self, dvar: str, collection: str, year, month, **kwargs  ) -> xa.DataArray:      # year: int, month: int
-		filepath = self.variable_cache_filepath( dvar, collection, year=year, month=month )
+	def load( self, dvar: str, year, month, **kwargs  ) -> xa.DataArray:      # year: int, month: int
+		filepath = self.variable_cache_filepath( dvar, year=year, month=month )
 		variable: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 		return variable
 
@@ -24,7 +24,7 @@ class MERRA2DataInterface(MERRA2Base):
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in self.vlist.items():
 			for vname in vlist:
-				varray: xa.DataArray = self.load(vname, collection, year, month, **kwargs)
+				varray: xa.DataArray = self.load(vname, year, month, **kwargs)
 				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={self.levels}")
 				if 'z' in varray.dims:
 					print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
@@ -39,6 +39,6 @@ class MERRA2DataInterface(MERRA2Base):
 		result = xa.concat( list(tsdata.values()), dim=features )
 		return result.rename( {result.dims[0]: "features"} ).transpose(..., "features")
 
-	
+
 
 

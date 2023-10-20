@@ -24,9 +24,9 @@ class MERRA2Base:
 		base_dir = cfg().platform.processed.format(root=cfg().platform.root)
 		return f"{base_dir}/data/merra2"
 
-	def variable_cache_filepath(self, vname: str, collection: str, **kwargs) -> str:
+	def variable_cache_filepath(self, vname: str,  **kwargs) -> str:
 		if "year" in kwargs:
 			if "month" in kwargs:   filename = "{varname}_{year}-{month}.nc".format( varname=vname, **kwargs )
 			else:                   filename = "{varname}_{year}.nc".format(varname=vname, **kwargs)
 		else:	                    filename = "{varname}.nc".format(varname=vname, **kwargs)
-		return f"{self.results_dir}/{self.cfgId}/{collection}/{filename}"
+		return f"{self.results_dir}/{self.cfgId}/{filename}"

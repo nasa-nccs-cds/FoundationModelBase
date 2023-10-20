@@ -117,7 +117,7 @@ class MERRA2DataProcessor(MERRA2Base):
         return newvar
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
-        filepath: str = self.variable_cache_filepath(dvar, collection, **kwargs)
+        filepath: str = self.variable_cache_filepath(dvar, **kwargs)
         reprocess: bool = kwargs.pop( 'reprocess', True )
         if (not os.path.exists(filepath)) or reprocess:
             print(f" ** Processing variable {dvar} in collection {collection}, args={kwargs}: {len(files)} files")
