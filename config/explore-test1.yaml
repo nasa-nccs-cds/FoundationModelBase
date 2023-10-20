@@ -1,7 +1,10 @@
-cid: graphcast.2.37.1
 defaults:
   - platform: explore
-#  - preprocess: graphcast.2.37.1
-  - preprocess: graphcast-test1
+  - preprocess: graphcast.2.37.1
   - model: graphcast.2.37.1
   - learning: demo1
+
+cid: graphcast.2.37.1
+
+
+#  - preprocess: graphcast-test1
