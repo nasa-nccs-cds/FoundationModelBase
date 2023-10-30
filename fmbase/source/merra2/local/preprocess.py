@@ -134,14 +134,16 @@ class MERRA2DataProcessor(MERRA2Base):
                 t1 = time.time()
                 if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" )
                 else:                 mvar: xa.DataArray = samples[0]
-                location: xa.DataArray = mvar.mean( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True )
-                scale: xa.DataArray = mvar.std( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True )
+                dims = ['time', 'y', 'x'] if "time" in mvar.dims else ['y', 'x']
+                location: xa.DataArray = mvar.mean( dim=dims, skipna=True, keep_attrs=True )
+                scale: xa.DataArray = mvar.std( dim=dims, skipna=True, keep_attrs=True )
                 location.name = "location"; scale.name = "scale"
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
                 print(f"Saving stat var {location.name}: shape= {location.shape}, dims= {location.dims}")
                 print(f"Saving stat var {scale.name}: shape= {scale.shape}, dims= {scale.dims}")
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-                mvar.to_netcdf( filepath, format="NETCDF4" )
+                dset = xa.Dataset( data_vars={dvar:mvar, 'scale':scale, 'location':location}, coords=mvar.coords )
+                dset.to_netcdf( filepath, format="NETCDF4" )
                 print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
                 print(f"  Completed processing in time = {(time.time()-t0)/60} min")
         else:
