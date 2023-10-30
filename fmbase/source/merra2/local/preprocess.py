@@ -134,8 +134,9 @@ class MERRA2DataProcessor(MERRA2Base):
                 t1 = time.time()
                 if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" )
                 else:                 mvar: xa.DataArray = samples[0]
-                location: xa.DataArray = mvar.mean( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True, name="location" )
-                scale: xa.DataArray = mvar.std( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True, name="scale" )
+                location: xa.DataArray = mvar.mean( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True )
+                scale: xa.DataArray = mvar.std( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True )
+                location.name = "location"; scale.name = "scale"
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
                 print(f"Saving stat var {location.name}: shape= {location.shape}, dims= {location.dims}")
                 print(f"Saving stat var {scale.name}: shape= {scale.shape}, dims= {scale.dims}")
