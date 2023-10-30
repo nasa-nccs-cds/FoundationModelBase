@@ -109,7 +109,7 @@ class MERRA2DataProcessor(MERRA2Base):
 
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
-        print( f" >> NEW: shape={newvar.shape}, dims={newvar.dims}, attrs={newvar.attrs}")
+        print( f" >> NEW: shape={newvar.shape}, dims={newvar.dims}" ) # , attrs={newvar.attrs}")
         for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
             if missing in newvar.attrs:
                 missing_value = newvar.attrs.pop('fmissing_value')
@@ -134,7 +134,11 @@ class MERRA2DataProcessor(MERRA2Base):
                 t1 = time.time()
                 if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" )
                 else:                 mvar: xa.DataArray = samples[0]
+                location: xa.DataArray = mvar.mean( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True, name="location" )
+                scale: xa.DataArray = mvar.std( dim=['time', 'y', 'x'], skipna=True, keep_attrs=True, name="scale" )
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
+                print(f"Saving stat var {location.name}: shape= {location.shape}, dims= {location.dims}")
+                print(f"Saving stat var {scale.name}: shape= {scale.shape}, dims= {scale.dims}")
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
                 mvar.to_netcdf( filepath, format="NETCDF4" )
                 print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
