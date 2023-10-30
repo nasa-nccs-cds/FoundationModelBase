@@ -11,6 +11,11 @@ class MERRA2DataInterface(MERRA2Base):
 
 	def __init__(self):
 		MERRA2Base.__init__(self)
+		self._stats: Dict[str,xa.DataArray] = {}
+		self._snames = ['location','scale']
+
+	def stat( self, sname ) -> Optional[xa.DataArray]:
+		return self._stats.get( sname )
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:
 		vlist: Dict[str, List] = cfg().model.get('vars')
@@ -19,7 +24,9 @@ class MERRA2DataInterface(MERRA2Base):
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
-				varray: xa.DataArray = self.load(vname, year, month, **kwargs)
+				dset: xa.Dataset = self.load_cache_var(vname, year, month, **kwargs)
+				varray: xa.DataArray = dset.data_vars[vname]
+				for sname in self._snames: self._stats[sname] = dset.data_vars[sname]
 				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
 				if 'z' in varray.dims:
 					print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")

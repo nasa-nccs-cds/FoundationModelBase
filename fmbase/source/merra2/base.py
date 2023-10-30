@@ -31,7 +31,7 @@ class MERRA2Base:
 		else:	                    filename = "{varname}.nc".format(varname=vname, **kwargs)
 		return f"{self.results_dir}/{self.cfgId}/{filename}"
 
-	def load_cache_var( self, dvar: str, year, month, **kwargs  ) -> xa.DataArray:      # year: int, month: int
+	def load_cache_var( self, dvar: str, year, month, **kwargs  ) -> xa.Dataset:      # year: int, month: int
 		filepath = self.variable_cache_filepath( dvar, year=year, month=month )
-		variable: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-		return variable
+		dset: xa.Dataset = xa.open_dataset(filepath,**kwargs)
+		return dset
