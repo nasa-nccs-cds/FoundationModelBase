@@ -10,13 +10,15 @@ from enum import Enum
 
 class StatsEntry:
 
-    def __init__(self):
+    def __init__(self, varname: str ):
         self._stats: Dict[str,List[xa.DataArray]] = {}
+        self._varname = varname
 
     def add(self, statname: str, mvar: xa.DataArray, weight: int ):
-        mvar.attrs['stat_weight'] = weight
+        mvar.attrs['stat_weight'] = float(weight)
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
+        print( f"Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}")
 
     def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
         return self._stats.get(statname)
