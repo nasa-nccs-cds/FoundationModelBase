@@ -1,6 +1,6 @@
 id: graphcast.2.37
 year_range: [2000,2001,1]
-month_range: [0,4,1]
+month_range: [0,2,1]
 tstep: "3H"
 xres: 2.0
 yres: 2.0
