@@ -27,7 +27,7 @@ class StatsAccumulator:
         self._entries: Dict[str, StatsEntry] = {}
 
     def _entry(self, varname: str ) -> StatsEntry:
-        entry: StatsEntry = self._entries.setdefault(varname)
+        entry: StatsEntry = self._entries.setdefault(varname,StatsEntry())
         return entry
 
     @property
