@@ -4,3 +4,4 @@ configure( 'explore-test1' )
 
 reader = MERRA2DataProcessor()
 reader.process( reprocess=True )
+reader.save_stats()

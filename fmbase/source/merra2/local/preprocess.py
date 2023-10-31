@@ -2,9 +2,73 @@ import xarray as xa
 import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
-import hydra, glob, sys, os, time
+import glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config, increasing
+from enum import Enum
+
+
+class StatsEntry:
+
+    def __init__(self):
+        self._stats: Dict[str,List[xa.DataArray]] = {}
+
+    def add(self, statname: str, mvar: xa.DataArray, weight: int ):
+        mvar.attrs['stat_weight'] = weight
+        elist = self._stats.setdefault(statname,[])
+        elist.append( mvar )
+
+    def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
+        return self._stats.get(statname)
+
+class StatsAccumulator:
+
+    def __init__(self):
+        self._entries: Dict[str, StatsEntry] = {}
+
+    def _entry(self, varname: str ) -> StatsEntry:
+        entry: StatsEntry = self._entries.setdefault(varname)
+        return entry
+
+    @property
+    def varnames(self):
+        return self._entries.keys()
+
+    def add_entry(self, varname: str, mvar: xa.DataArray):
+        istemporal = "time" in mvar.dims
+        first_entry = varname not in self._entries
+        dims = ['time', 'y', 'x'] if istemporal else ['y', 'x']
+        weight =  mvar.shape[0] if istemporal else 1
+        if istemporal or first_entry:
+            location: xa.DataArray = mvar.mean(dim=dims, skipna=True, keep_attrs=True)
+            scale: xa.DataArray = mvar.std(dim=dims, skipna=True, keep_attrs=True)
+            entry: StatsEntry= self._entry( varname )
+            entry.add( "location", location, weight )
+            entry.add("scale",  scale, weight )
+
+    def accumulate(self, varname: str ) -> xa.Dataset:
+        varstats: StatsEntry = self._entries[varname]
+        accum_stats = {}
+        coords = {}
+        for statname in ["location","scale"]:
+            entries: Optional[List[xa.DataArray]] = varstats.entries( statname )
+            squared = (statname == "scale")
+            if entries is not None:
+                esum, wsum = None, 0
+                for entry in entries:
+                    w = entry.attrs['stat_weight']
+                    eterm = w*entry*entry if squared else w*entry
+                    esum = eterm if (esum is None) else esum + eterm
+                    wsum = wsum + w
+                astat = np.sqrt( esum/wsum ) if squared else esum/wsum
+                accum_stats[statname] = astat
+                coords.update( astat.coords )
+        return xa.Dataset( accum_stats, coords )
+
+    def save( self, varname: str, filepath: str ):
+        os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
+        accum_stats: xa.Dataset = self.accumulate(varname)
+        accum_stats.to_netcdf( filepath )
 
 
 class MERRA2DataProcessor(MERRA2Base):
@@ -22,6 +86,11 @@ class MERRA2DataProcessor(MERRA2Base):
         self.var_file_template = cfg().platform.dataset_files
         self.const_file_template = cfg().platform.constant_file
         self._subsample_coords: Dict[str,np.ndarray] = None
+        self.stats = StatsAccumulator()
+
+    def save_stats(self):
+        for varname in self.stats.varnames:
+            self.stats.save( varname, self.stats_filepath(varname) )
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
@@ -134,16 +203,10 @@ class MERRA2DataProcessor(MERRA2Base):
                 t1 = time.time()
                 if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" )
                 else:                 mvar: xa.DataArray = samples[0]
-                dims = ['time', 'y', 'x'] if "time" in mvar.dims else ['y', 'x']
-                location: xa.DataArray = mvar.mean( dim=dims, skipna=True, keep_attrs=True )
-                scale: xa.DataArray = mvar.std( dim=dims, skipna=True, keep_attrs=True )
-                location.name = "location"; scale.name = "scale"
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
-                print(f"Saving stat var {location.name}: shape= {location.shape}, dims= {location.dims}")
-                print(f"Saving stat var {scale.name}: shape= {scale.shape}, dims= {scale.dims}")
+                self.stats.add_entry( dvar, mvar )
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-                dset = xa.Dataset( data_vars={dvar:mvar, 'scale':scale, 'location':location}, coords=mvar.coords )
-                dset.to_netcdf( filepath, format="NETCDF4" )
+                mvar.to_netcdf( filepath, format="NETCDF4" )
                 print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
                 print(f"  Completed processing in time = {(time.time()-t0)/60} min")
         else:
