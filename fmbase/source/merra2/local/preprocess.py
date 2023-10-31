@@ -18,7 +18,7 @@ class StatsEntry:
         mvar.attrs['stat_weight'] = float(weight)
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
-        print( f"Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}")
+        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}, sample: {[mvar.values[0:6].tolist()]}")
 
     def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
         return self._stats.get(statname)
@@ -71,6 +71,9 @@ class StatsAccumulator:
         os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
         accum_stats: xa.Dataset = self.accumulate(varname)
         accum_stats.to_netcdf( filepath )
+        print(f" SSS: Save stats[{varname}] to {filepath}")
+        for sname, vstat in accum_stats.data_vars.items():
+            print(f"   >> Entry[{varname}.{sname}]: dims={vstat.dims}, shape={vstat.shape}, sample: {[vstat.values[0:6].tolist()]}")
 
 
 class MERRA2DataProcessor(MERRA2Base):
