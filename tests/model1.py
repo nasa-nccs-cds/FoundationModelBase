@@ -7,9 +7,10 @@ configure( 'explore-test1' )
 
 datasetMgr = MERRA2DataInterface()
 tsdata: xa.DataArray = datasetMgr.load_timestep( 2000, 0 )
-csamples: np.ndarray = tsdata.coords['samples'].values
-print( f"RESULT: shape={tsdata.shape}, dims={tsdata.dims}, samples={csamples.tolist()}")
+print( f"LOADED TRAIN DATA: shape={tsdata.shape}, dims={tsdata.dims}")
 
-tstats: xa.Dataset = datasetMgr.load_stats( 'T' )
-locations: xa.DataArray = tstats['locations']
-print( f"STATS: locations shape={locations.shape}, dims={locations.dims}, samples={locations.values[0:10]}")
+varname = 'T'
+tstats: xa.Dataset = datasetMgr.load_stats( varname )
+for statname in ['location', 'scale']:
+	stat: xa.DataArray = tstats[statname]
+	print( f"LOADED {varname} STATS: {statname} shape={stat.shape}, dims={stat.dims}")
