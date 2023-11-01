@@ -18,7 +18,8 @@ class StatsEntry:
         mvar.attrs['stat_weight'] = float(weight)
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
-        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}, sample: {[mvar.values[0:6].tolist()]}")
+        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}")
+        print( f"      --> sample: {[mvar.values[0:19].tolist()]}")
 
     def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
         return self._stats.get(statname)
