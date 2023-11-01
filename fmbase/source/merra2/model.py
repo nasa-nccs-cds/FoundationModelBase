@@ -8,12 +8,10 @@ import hydra, glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config
 
-
 class MERRA2DataInterface(MERRA2Base):
 
 	def __init__(self):
 		MERRA2Base.__init__(self)
-		self.saccum = StatsAccumulator()
 
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:

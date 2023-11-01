@@ -5,7 +5,7 @@ from typing import List, Union, Tuple, Optional, Dict, Type
 import glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config, increasing
-from enum import Enum
+np.set_printoptions(precision=3, suppress=False)
 
 
 class StatsEntry:
@@ -19,7 +19,8 @@ class StatsEntry:
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
         print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}")
-        print( f"      --> sample: {[mvar.values[0:19].tolist()]}")
+        if len(mvar.dims) > 0:  print( f"      --> sample: {mvar.values[0:19]}")
+        else:                   print( f"      --> sample: {mvar.values}")
 
     def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
         return self._stats.get(statname)

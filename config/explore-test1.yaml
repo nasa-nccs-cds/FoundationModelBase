@@ -1,6 +1,6 @@
 defaults:
   - platform: explore
-  - preprocess: graphcast-test2
+  - preprocess: graphcast.2.37.1
   - model: graphcast.2.37.1
   - learning: demo1
 
