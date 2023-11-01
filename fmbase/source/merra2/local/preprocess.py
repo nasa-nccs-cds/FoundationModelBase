@@ -18,7 +18,7 @@ class StatsEntry:
         mvar.attrs['stat_weight'] = float(weight)
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
-        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, weight={weight}")
+        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, size={mvar.size}, ndim={mvar.ndim}, weight={weight}")
         if len(mvar.dims) > 0:  print( f"      --> sample: {mvar.values[0:19]}")
         else:                   print( f"      --> sample: {mvar.values}")
 
