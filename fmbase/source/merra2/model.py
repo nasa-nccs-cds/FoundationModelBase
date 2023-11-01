@@ -13,7 +13,6 @@ class MERRA2DataInterface(MERRA2Base):
 	def __init__(self):
 		MERRA2Base.__init__(self)
 
-
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:
 		vlist: Dict[str, List] = cfg().model.get('vars')
 		levels: np.ndarray = get_levels_config(cfg().model)
@@ -36,6 +35,20 @@ class MERRA2DataInterface(MERRA2Base):
 		print(f" --> values={features.values.tolist()}")
 		result = xa.concat( list(tsdata.values()), dim=features )
 		return result.rename( {result.dims[0]: "features"} ).transpose(..., "features")
+
+	def load_norm_data(self):
+		vlist: Dict[str, List] = cfg().model.get('vars')
+		locations, scales, coords, result = {}, {}, {}, {}
+		for (collection,vlist) in vlist.items():
+			for vname in vlist:
+				stats: xa.Dataset = self.load_stats(vname)
+				locations[vname] = stats['location']
+				scales[vname] = stats['scales']
+				coords.update( stats.coords )
+		result['locations'] = xa.Dataset(locations, coords)
+		result['scales'] = xa.Dataset(scales, coords)
+		return result
+
 
 
 

@@ -10,3 +10,6 @@ tsdata: xa.DataArray = datasetMgr.load_timestep( 2000, 0 )
 csamples: np.ndarray = tsdata.coords['samples'].values
 print( f"RESULT: shape={tsdata.shape}, dims={tsdata.dims}, samples={csamples.tolist()}")
 
+tstats: xa.Dataset = datasetMgr.load_stats( 'T' )
+locations: xa.DataArray = tstats['locations']
+print( f"STATS: locations shape={locations.shape}, dims={locations.dims}, samples={locations.values[0:10]}")
