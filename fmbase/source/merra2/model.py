@@ -31,8 +31,9 @@ class MERRA2DataInterface(MERRA2Base):
 				else:
 					tsdata[vname] = varray
 		features = xa.DataArray( data=list(tsdata.keys()), name="features" )
-		print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims} data={list(tsdata.keys())}")
-		print(f" --> values={features.values.tolist()}")
+		print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims}, Features:" )
+		for fname, fdata in tsdata.items():
+			print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 		result = xa.concat( list(tsdata.values()), dim=features )
 		return result.rename( {result.dims[0]: "features"} ).transpose(..., "features")
 
