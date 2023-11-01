@@ -16,15 +16,17 @@ class MERRA2DataInterface(MERRA2Base):
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:
 		vlist: Dict[str, List] = cfg().model.get('vars')
 		levels: np.ndarray = get_levels_config(cfg().model)
-		tsdata = {}
+		tsdata, taxis = {}, None
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
 				varray: xa.DataArray = self.load_cache_var(vname, year, month, **kwargs)
-
+				if taxis is None:
+					assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {vname}"
+					taxis = varray.coords['time']
 				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
 				if "time" not in varray.dims:
-					varray = varray.expand_dims(dim='time')
+					varray = varray.expand_dims( dim={'time':taxis} )
 				if 'z' in varray.dims:
 					print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 					levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
