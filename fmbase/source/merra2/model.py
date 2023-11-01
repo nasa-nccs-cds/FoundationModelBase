@@ -21,8 +21,7 @@ class MERRA2DataInterface(MERRA2Base):
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
-				dset: xa.Dataset = self.load_cache_var(vname, year, month, **kwargs)
-				varray: xa.DataArray = dset.data_vars[vname]
+				varray: xa.DataArray = self.load_cache_var(vname, year, month, **kwargs)
 
 				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
 				if 'z' in varray.dims:

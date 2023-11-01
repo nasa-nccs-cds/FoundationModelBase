@@ -5,7 +5,7 @@ from typing import List, Union, Tuple, Optional, Dict, Type
 import glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config, increasing
-np.set_printoptions(precision=3, suppress=False)
+np.set_printoptions(precision=3, suppress=False, linewidth=150)
 
 
 class StatsEntry:
@@ -19,7 +19,7 @@ class StatsEntry:
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
         print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, size={mvar.size}, ndim={mvar.ndim}, weight={weight}")
-        if mvar.ndim > 0:  print( f"      --> sample: {mvar.values[0:19]}")
+        if mvar.ndim > 0:  print( f"      --> sample: {mvar.values[0:8]}")
         else:              print( f"      --> sample: {mvar.values}")
 
     def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
@@ -76,7 +76,7 @@ class StatsAccumulator:
         print(f" SSS: Save stats[{varname}] to {filepath}")
         for sname, vstat in accum_stats.data_vars.items():
             print(f"   >> Entry[{varname}.{sname}]: dims={vstat.dims}, shape={vstat.shape}")
-            if vstat.ndim > 0:  print(f"      --> sample: {vstat.values[0:6]}")
+            if vstat.ndim > 0:  print(f"      --> sample: {vstat.values[0:8]}")
             else:               print(f"      --> sample: {vstat.values}")
 
 
