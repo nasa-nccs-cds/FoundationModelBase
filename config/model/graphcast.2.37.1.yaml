@@ -1,3 +1,8 @@
-
+year_range: [2000,2001,1]
+month_range: [0,2,1]
+vars: { inst3_3d_asm_Np: [ 'T', 'U' ],
+        inst1_2d_asm_Nx: ['SLP'],
+        const_2d_ctm_Nx: [ 'PHIS'],
+        tavg1_2d_int_Nx: ['PRECLS'] }
 
 
