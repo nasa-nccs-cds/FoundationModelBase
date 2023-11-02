@@ -7,20 +7,42 @@ from typing import List, Union, Tuple, Optional, Dict, Type
 import hydra, glob, sys, os, time
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config
+from dataclasses import dataclass
+
+@dataclass(eq=True,repr=True,frozen=True,order=True)
+class MonthYear:
+	year: int
+	month: int
 
 class MERRA2DataInterface(MERRA2Base):
 
 	def __init__(self):
 		MERRA2Base.__init__(self)
 
-	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.DataArray:
+	def load_batch(self, start: MonthYear, end: MonthYear ) -> xa.Dataset:
+		slices: List[xa.Dataset] = []
+		for year in range( start.year,end.year+1):
+			month_range = [0,12]
+			if year == start.year: month_range[0] = start.month
+			if year == end.year:   month_range[1] = end.month + 1
+			for month in range( *month_range ):
+				slices.append( self.load_timestep( year, month ) )
+		return self.merge_batch( slices )
+
+	@classmethod
+	def merge_batch(cls, slices: List[xa.Dataset] ) -> xa.Dataset:
+		pass
+
+
+	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.Dataset:
 		vlist: Dict[str, List] = cfg().model.get('vars')
 		levels: np.ndarray = get_levels_config(cfg().model)
-		tsdata, taxis = {}, None
+		tsdata, coords, taxis = {}, {}, None
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
 				varray: xa.DataArray = self.load_cache_var(vname, year, month, **kwargs)
+				coords.update( varray.coords )
 				if taxis is None:
 					assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {vname}"
 					taxis = varray.coords['time']
@@ -38,8 +60,14 @@ class MERRA2DataInterface(MERRA2Base):
 		print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims}, Features:" )
 		for fname, fdata in tsdata.items():
 			print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
-		result = xa.concat( list(tsdata.values()), dim=features )
-		return result.rename( {result.dims[0]: "features"} ).transpose(..., "features")
+		return xa.Dataset( tsdata, coords )
+
+	@classmethod
+	def to_feature_array(cls, data_batch: xa.Dataset) -> xa.DataArray:
+		features = xa.DataArray(data=list(data_batch.data_vars.keys()), name="features")
+		result = xa.concat( list(data_batch.data_vars.values()), dim=features )
+		result = result.transpose(..., "features")
+		return result
 
 	def load_norm_data(self) -> Dict[str,xa.Dataset]:
 		vlist: Dict[str, List] = cfg().model.get('vars')
