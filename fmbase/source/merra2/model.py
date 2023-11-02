@@ -10,7 +10,7 @@ from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 
 @dataclass(eq=True,repr=True,frozen=True,order=True)
-class MonthYear:
+class YearMonth:
 	year: int
 	month: int
 
@@ -19,7 +19,7 @@ class MERRA2DataInterface(MERRA2Base):
 	def __init__(self):
 		MERRA2Base.__init__(self)
 
-	def load_batch(self, start: MonthYear, end: MonthYear ) -> xa.Dataset:
+	def load_batch(self, start: YearMonth, end: YearMonth) -> xa.Dataset:
 		slices: List[xa.Dataset] = []
 		for year in range( start.year,end.year+1):
 			month_range = [0,12]
@@ -31,8 +31,12 @@ class MERRA2DataInterface(MERRA2Base):
 
 	@classmethod
 	def merge_batch(cls, slices: List[xa.Dataset] ) -> xa.Dataset:
-		pass
-
+		merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
+		sample: xa.Dataset = slices[0]
+		for vname, dvar in sample.data_vars.items():
+			if vname not in merged.data_vars.keys():
+				merged[vname] = dvar
+		return merged
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.Dataset:
 		vlist: Dict[str, List] = cfg().model.get('vars')
