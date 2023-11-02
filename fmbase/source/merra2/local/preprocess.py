@@ -44,19 +44,19 @@ class StatsAccumulator:
         dims = ['time', 'y', 'x'] if istemporal else ['y', 'x']
         weight =  mvar.shape[0] if istemporal else 1
         if istemporal or first_entry:
-            location: xa.DataArray = mvar.mean(dim=dims, skipna=True, keep_attrs=True)
-            scale: xa.DataArray = mvar.std(dim=dims, skipna=True, keep_attrs=True)
+            mean: xa.DataArray = mvar.mean(dim=dims, skipna=True, keep_attrs=True)
+            std: xa.DataArray = mvar.std(dim=dims, skipna=True, keep_attrs=True)
             entry: StatsEntry= self._entry( varname )
-            entry.add( "location", location, weight )
-            entry.add("scale",  scale, weight )
+            entry.add( "mean", mean, weight )
+            entry.add("std",  std, weight )
 
     def accumulate(self, varname: str ) -> xa.Dataset:
         varstats: StatsEntry = self._entries[varname]
         accum_stats = {}
         coords = {}
-        for statname in ["location","scale"]:
+        for statname in ["mean","std"]:
             entries: Optional[List[xa.DataArray]] = varstats.entries( statname )
-            squared = (statname == "scale")
+            squared = (statname == "std")
             if entries is not None:
                 esum, wsum = None, 0
                 for entry in entries:

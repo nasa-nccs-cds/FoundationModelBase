@@ -41,17 +41,17 @@ class MERRA2DataInterface(MERRA2Base):
 		result = xa.concat( list(tsdata.values()), dim=features )
 		return result.rename( {result.dims[0]: "features"} ).transpose(..., "features")
 
-	def load_norm_data(self):
+	def load_norm_data(self) -> Dict[str,xa.Dataset]:
 		vlist: Dict[str, List] = cfg().model.get('vars')
-		locations, scales, coords, result = {}, {}, {}, {}
+		mean, std, coords, result = {}, {}, {}, {}
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
 				stats: xa.Dataset = self.load_stats(vname)
-				locations[vname] = stats['location']
-				scales[vname] = stats['scales']
+				mean[vname] = stats['mean']
+				std[vname] = stats['stds']
 				coords.update( stats.coords )
-		result['locations'] = xa.Dataset(locations, coords)
-		result['scales'] = xa.Dataset(scales, coords)
+		result['mean'] = xa.Dataset(mean, coords)
+		result['std'] = xa.Dataset(std, coords)
 		return result
 
 

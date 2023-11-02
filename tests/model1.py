@@ -14,7 +14,7 @@ for cname in ['features', 'time']:
 
 varname = 'T'
 tstats: xa.Dataset = datasetMgr.load_stats( varname )
-for statname in ['location', 'scale']:
+for statname in ['mean', 'std']:
 	stat: xa.DataArray = tstats[statname]
 	print( f"LOADED {varname} STATS: {statname} shape={stat.shape}, dims={stat.dims}")
 	if stat.ndim>0: print( f" >>>> samples={stat.values[0:10]}" )
