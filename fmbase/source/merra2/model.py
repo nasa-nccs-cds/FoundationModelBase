@@ -83,7 +83,7 @@ class MERRA2DataInterface(MERRA2Base):
 		for vname in vlist:
 			stats: xa.Dataset = self.load_stats(version,vname)
 			mean[vname] = stats['mean']
-			std[vname] = stats['stds']
+			std[vname] = stats['std']
 			coords.update( stats.coords )
 		result['mean'] = xa.Dataset(mean, coords)
 		result['std'] = xa.Dataset(std, coords)
