@@ -33,9 +33,13 @@ class MERRA2DataInterface(MERRA2Base):
 	def merge_batch(cls, slices: List[xa.Dataset] ) -> xa.Dataset:
 		merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
 		sample: xa.Dataset = slices[0]
+		datetime = None
 		for vname, dvar in sample.data_vars.items():
 			if vname not in merged.data_vars.keys():
 				merged[vname] = dvar
+			elif datetime is None:
+				datetime = dvar.coords['time']
+		merged['datetime'] = datetime
 		return merged
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.Dataset:
