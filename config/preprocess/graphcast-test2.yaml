@@ -1,4 +1,4 @@
-id: graphcast.2.37
+dataset_version:    'graphcast.2.37'
 year_range: [2000,2001,1]
 month_range: [0,4,1]
 tstep: "3H"

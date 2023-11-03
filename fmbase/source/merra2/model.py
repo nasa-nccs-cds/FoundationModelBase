@@ -41,11 +41,12 @@ class MERRA2DataInterface(MERRA2Base):
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.Dataset:
 		vlist: Dict[str, List] = cfg().dataset.get('vars')
 		levels: np.ndarray = get_levels_config(cfg().task)
+		version = cfg().task.dataset_version
 		tsdata, coords, taxis = {}, {}, None
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
-				varray: xa.DataArray = self.load_cache_var(vname, year, month, **kwargs)
+				varray: xa.DataArray = self.load_cache_var(version, vname, year, month, **kwargs)
 				coords.update( varray.coords )
 				if taxis is None:
 					assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {vname}"
@@ -77,10 +78,11 @@ class MERRA2DataInterface(MERRA2Base):
 
 	def load_norm_data(self) -> Dict[str,xa.Dataset]:
 		vlist: Dict[str, List] = cfg().dataset.get('vars')
+		version = cfg().task.dataset_version
 		mean, std, coords, result = {}, {}, {}, {}
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
-				stats: xa.Dataset = self.load_stats(vname)
+				stats: xa.Dataset = self.load_stats(version,vname)
 				mean[vname] = stats['mean']
 				std[vname] = stats['stds']
 				coords.update( stats.coords )

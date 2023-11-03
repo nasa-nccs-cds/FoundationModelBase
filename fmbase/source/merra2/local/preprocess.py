@@ -99,7 +99,7 @@ class MERRA2DataProcessor(MERRA2Base):
 
     def save_stats(self):
         for varname in self.stats.varnames:
-            self.stats.save( varname, self.stats_filepath(varname) )
+            self.stats.save( varname, self.stats_filepath( cfg().preprocess.version, varname ) )
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
@@ -195,7 +195,7 @@ class MERRA2DataProcessor(MERRA2Base):
         return newvar
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
-        filepath: str = self.variable_cache_filepath(dvar, **kwargs)
+        filepath: str = self.variable_cache_filepath( cfg().preprocess.version, dvar, **kwargs )
         reprocess: bool = kwargs.pop( 'reprocess', True )
         if (not os.path.exists(filepath)) or reprocess:
             print(f" ** Processing variable {dvar} in collection {collection}, args={kwargs}: {len(files)} files")
