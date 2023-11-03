@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.source.merra2.model import MERRA2DataInterface, YearMonth
 from fmbase.util.config import configure
 import xarray as xa
-configure( 'explore-test1', "../config" )
+configure('explore-test1')
 
 start = YearMonth( 2000, 0 )
 end = YearMonth( 2000, 1 )
