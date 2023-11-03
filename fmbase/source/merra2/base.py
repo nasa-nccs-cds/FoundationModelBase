@@ -38,7 +38,8 @@ class MERRA2Base:
 		coord_map: Dict = kwargs.pop('coords', {})
 		filepath = self.variable_cache_filepath( version, dvar, year=year, month=month )
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-		return darray.rename(coord_map)
+		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
+		return darray.rename(cmap)
 
 	def load_stats( self, version: str, dvar: str, **kwargs) -> xa.Dataset:
 		filepath = self.stats_filepath(version,dvar)
