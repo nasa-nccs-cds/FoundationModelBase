@@ -56,8 +56,10 @@ class MERRA2DataInterface(MERRA2Base):
 				if 'z' in varray.dims:
 					print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 					levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
-					for lev in levs:
-						tsdata[f"{vname}.{lev}"] = varray.sel( z=lev, method="nearest", drop=True )
+					for iL, lev in enumerate(levs):
+						level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
+						level_array.attrs['level'] = lev
+						tsdata[f"{vname}.{iL}"] = level_array
 				else:
 					tsdata[vname] = varray
 		features = xa.DataArray( data=list(tsdata.keys()), name="features" )
