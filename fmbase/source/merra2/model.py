@@ -39,8 +39,8 @@ class MERRA2DataInterface(MERRA2Base):
 		return merged
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.Dataset:
-		vlist: Dict[str, List] = cfg().model.get('vars')
-		levels: np.ndarray = get_levels_config(cfg().model)
+		vlist: Dict[str, List] = cfg().dataset.get('vars')
+		levels: np.ndarray = get_levels_config(cfg().task)
 		tsdata, coords, taxis = {}, {}, None
 		print(f"load_timestep({month}/{year})")
 		for (collection,vlist) in vlist.items():
@@ -76,7 +76,7 @@ class MERRA2DataInterface(MERRA2Base):
 		return result
 
 	def load_norm_data(self) -> Dict[str,xa.Dataset]:
-		vlist: Dict[str, List] = cfg().model.get('vars')
+		vlist: Dict[str, List] = cfg().dataset.get('vars')
 		mean, std, coords, result = {}, {}, {}, {}
 		for (collection,vlist) in vlist.items():
 			for vname in vlist:
