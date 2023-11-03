@@ -75,16 +75,16 @@ class MERRA2DataInterface(MERRA2Base):
 		result = result.transpose(..., "features")
 		return result
 
-	def load_norm_data(self) -> Dict[str,xa.Dataset]:
-		vlist: Dict[str, List] = cfg().dataset.get('vars')
+
+	def load_norm_data( self ) -> Dict[str,xa.Dataset]:
+		vlist: List[str] = cfg().task.input_variables + cfg().task.forcing_variables
 		version = cfg().task.dataset_version
 		mean, std, coords, result = {}, {}, {}, {}
-		for (collection,vlist) in vlist.items():
-			for vname in vlist:
-				stats: xa.Dataset = self.load_stats(version,vname)
-				mean[vname] = stats['mean']
-				std[vname] = stats['stds']
-				coords.update( stats.coords )
+		for vname in vlist:
+			stats: xa.Dataset = self.load_stats(version,vname)
+			mean[vname] = stats['mean']
+			std[vname] = stats['stds']
+			coords.update( stats.coords )
 		result['mean'] = xa.Dataset(mean, coords)
 		result['std'] = xa.Dataset(std, coords)
 		return result
