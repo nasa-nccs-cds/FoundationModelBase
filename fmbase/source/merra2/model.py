@@ -39,30 +39,29 @@ class MERRA2DataInterface(MERRA2Base):
 		return merged
 
 	def load_timestep(self, year: int, month: int, **kwargs ) -> xa.Dataset:
-		vlist: Dict[str, List] = cfg().dataset.get('vars')
+		vlist: List[str] = cfg().task.input_variables + cfg().task.forcing_variables
 		levels: np.ndarray = get_levels_config(cfg().task)
 		version = cfg().task.dataset_version
 		tsdata, coords, taxis = {}, {}, None
 		print(f"load_timestep({month}/{year})")
-		for (collection,vlist) in vlist.items():
-			for vname in vlist:
-				varray: xa.DataArray = self.load_cache_var(version, vname, year, month, **kwargs)
-				coords.update( varray.coords )
-				if taxis is None:
-					assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {vname}"
-					taxis = varray.coords['time']
-				print( f"load_var({collection}.{vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
-				if "time" not in varray.dims:
-					varray = varray.expand_dims( dim={'time':taxis} )
-				if 'z' in varray.dims:
-					print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
-					levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
-					for iL, lev in enumerate(levs):
-						level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
-						level_array.attrs['level'] = lev
-						tsdata[f"{vname}.{iL}"] = level_array
-				else:
-					tsdata[vname] = varray
+		for vname in vlist:
+			varray: xa.DataArray = self.load_cache_var(version, vname, year, month, **kwargs)
+			coords.update( varray.coords )
+			if taxis is None:
+				assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {vname}"
+				taxis = varray.coords['time']
+			print( f"load_var({vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
+			if "time" not in varray.dims:
+				varray = varray.expand_dims( dim={'time':taxis} )
+			if 'z' in varray.dims:
+				print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
+				levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
+				for iL, lev in enumerate(levs):
+					level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
+					level_array.attrs['level'] = lev
+					tsdata[f"{vname}.{iL}"] = level_array
+			else:
+				tsdata[vname] = varray
 		features = xa.DataArray( data=list(tsdata.keys()), name="features" )
 		print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims}, Features:" )
 		for fname, fdata in tsdata.items():
