@@ -19,14 +19,14 @@ class MERRA2DataInterface(MERRA2Base):
 	def __init__(self):
 		MERRA2Base.__init__(self)
 
-	def load_batch(self, start: YearMonth, end: YearMonth) -> xa.Dataset:
+	def load_batch(self, start: YearMonth, end: YearMonth, **kwargs ) -> xa.Dataset:
 		slices: List[xa.Dataset] = []
 		for year in range( start.year,end.year+1):
 			month_range = [0,12]
 			if year == start.year: month_range[0] = start.month
 			if year == end.year:   month_range[1] = end.month + 1
 			for month in range( *month_range ):
-				slices.append( self.load_timestep( year, month ) )
+				slices.append( self.load_timestep( year, month, **kwargs ) )
 		return self.merge_batch( slices )
 
 	@classmethod

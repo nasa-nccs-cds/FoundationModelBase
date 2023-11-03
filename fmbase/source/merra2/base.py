@@ -35,9 +35,10 @@ class MERRA2Base:
 		return f"{self.results_dir}/{version}/stats/{varname}.nc"
 
 	def load_cache_var( self, version: str, dvar: str, year: int, month: int, **kwargs  ) -> xa.DataArray:
+		coord_map: Dict = kwargs.get('coords', {})
 		filepath = self.variable_cache_filepath( version, dvar, year=year, month=month )
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-		return darray
+		return darray.rename(coord_map)
 
 	def load_stats( self, version: str, dvar: str, **kwargs) -> xa.Dataset:
 		filepath = self.stats_filepath(version,dvar)
