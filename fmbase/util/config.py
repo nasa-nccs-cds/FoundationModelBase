@@ -5,22 +5,20 @@ from pathlib import Path
 def cfg() -> DictConfig:
     return Configuration.instance().cfg
 
-def configure(config_name: str, config_path=None):
-    if config_path is None: config_path =  "../../config"
-    Configuration.init( config_name, config_path )
+def configure(config_name: str):
+    Configuration.init( config_name )
 
 class Configuration:
     _instance = None
     _instantiated = None
 
-    def __init__(self, config_name: str, config_path: str ):
-        hydra.initialize( version_base=None, config_path=config_path )
+    def __init__(self, config_name: str ):
         self.cfg: DictConfig = hydra.compose( config_name, return_hydra_config=True )
 
     @classmethod
-    def init(cls, config_name: str, config_path: str ):
+    def init(cls, config_name: str ):
         if cls._instance is None:
-            inst = cls(config_name,config_path)
+            inst = cls(config_name)
             cls._instance = inst
             cls._instantiated = cls
 

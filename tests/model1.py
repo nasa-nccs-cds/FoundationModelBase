@@ -2,7 +2,8 @@ import numpy as np
 
 from fmbase.source.merra2.model import MERRA2DataInterface
 from fmbase.util.config import configure
-import xarray as xa
+import hydra, xarray as xa
+hydra.initialize( version_base=None, config_path="../config" )
 configure( 'explore-test1' )
 
 datasetMgr = MERRA2DataInterface()

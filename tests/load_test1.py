@@ -2,7 +2,8 @@
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.source.merra2.model import MERRA2DataInterface, YearMonth
 from fmbase.util.config import configure
-import xarray as xa
+import hydra, xarray as xa
+hydra.initialize( version_base=None, config_path="../config" )
 configure('explore-test1')
 
 start = YearMonth( 2000, 0 )
