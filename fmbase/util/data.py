@@ -275,6 +275,7 @@ def extract_inputs_targets_forcings(
     ) -> Tuple[xarray.Dataset, xarray.Dataset, xarray.Dataset]:
   """Extracts inputs, targets and forcings according to requirements."""
   dataset = dataset.sel(level=list(pressure_levels))
+  print( f" ####### extract_inputs_targets_forcings: input_duration={input_duration}, target_lead_times={target_lead_times}")
 
   # "Forcings" are derived variables and do not exist in the original ERA5 or
   # HRES datasets. Compute them if they are not in `dataset`.
