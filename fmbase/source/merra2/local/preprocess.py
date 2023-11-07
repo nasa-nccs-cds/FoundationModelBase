@@ -29,6 +29,7 @@ class StatsAccumulator:
 
     def __init__(self):
         self._entries: Dict[str, StatsEntry] = {}
+        self._basevar: Dict[str, xa.DataArray] = {}
 
     def _entry(self, varname: str ) -> StatsEntry:
         entry: StatsEntry = self._entries.setdefault(varname,StatsEntry(varname))
@@ -49,14 +50,23 @@ class StatsAccumulator:
             entry: StatsEntry= self._entry( varname )
             entry.add( "mean", mean, weight )
             entry.add("std",  std, weight )
+            if istemporal:
+                if varname in self._basevar:
+                    mvar_diff: xa.DataArray = mvar - self._basevar[varname]
+                    mean_diff: xa.DataArray = mvar_diff.mean( dim=dims, skipna=True, keep_attrs=True )
+                    std_diff: xa.DataArray  = mvar_diff.std(  dim=dims, skipna=True, keep_attrs=True )
+                    entry: StatsEntry = self._entry( varname )
+                    entry.add("mean_diff", mean_diff, weight)
+                    entry.add("std_diff",  std_diff,  weight)
+                self._basevar[varname] = mvar
 
     def accumulate(self, varname: str ) -> xa.Dataset:
         varstats: StatsEntry = self._entries[varname]
         accum_stats = {}
         coords = {}
-        for statname in ["mean","std"]:
+        for statname in ["mean","std","mean_diff","std_diff"]:
             entries: Optional[List[xa.DataArray]] = varstats.entries( statname )
-            squared = (statname == "std")
+            squared = statname.startswith("std")
             if entries is not None:
                 esum, wsum = None, 0
                 for entry in entries:
