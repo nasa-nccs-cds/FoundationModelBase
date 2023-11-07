@@ -5,6 +5,7 @@ from omegaconf import DictConfig, OmegaConf
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import hydra, glob, sys, os, time
+from fmbase.source.merra2.local.preprocess import StatsAccumulator
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
@@ -79,19 +80,10 @@ class MERRA2DataInterface(MERRA2Base):
 		result = result.transpose(..., "features")
 		return result
 
-
 	def load_norm_data( self ) -> Dict[str,xa.Dataset]:
-		vlist: List[str] = cfg().task.input_variables + cfg().task.forcing_variables
 		version = cfg().task.dataset_version
-		mean, std, coords, result = {}, {}, {}, {}
-		for vname in vlist:
-			stats: xa.Dataset = self.load_stats(version,vname)
-			mean[vname] = stats['mean']
-			std[vname] = stats['std']
-			coords.update( stats.coords )
-		result['mean'] = xa.Dataset(mean, coords)
-		result['std'] = xa.Dataset(std, coords)
-		return result
+		stats = { statname: self.load_stats(version,statname) for statname in StatsAccumulator.statnames }
+		return stats
 
 
 

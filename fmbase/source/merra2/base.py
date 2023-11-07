@@ -31,8 +31,8 @@ class MERRA2Base:
 		else:	                    filename = "{varname}.nc".format(varname=vname, **kwargs)
 		return f"{self.results_dir}/{version}/{filename}"
 
-	def stats_filepath(self, version: str, varname: str) -> str:
-		return f"{self.results_dir}/{version}/stats/{varname}.nc"
+	def stats_filepath(self, version: str, statname: str) -> str:
+		return f"{self.results_dir}/{version}/stats/{statname}.nc"
 
 	def load_cache_var( self, version: str, dvar: str, year: int, month: int, **kwargs  ) -> xa.DataArray:
 		coord_map: Dict = kwargs.pop('coords', {})
@@ -41,7 +41,7 @@ class MERRA2Base:
 		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
 		return darray.rename(cmap)
 
-	def load_stats( self, version: str, dvar: str, **kwargs) -> xa.Dataset:
-		filepath = self.stats_filepath(version,dvar)
+	def load_stats( self, version: str, statname: str, **kwargs) -> xa.Dataset:
+		filepath = self.stats_filepath(version,statname)
 		varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
 		return varstats

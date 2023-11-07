@@ -26,6 +26,7 @@ class StatsEntry:
         return self._stats.get(statname)
 
 class StatsAccumulator:
+    statnames = ["mean", "std", "mean_diff", "std_diff"]
 
     def __init__(self):
         self._entries: Dict[str, StatsEntry] = {}
@@ -58,11 +59,11 @@ class StatsAccumulator:
                 entry.add("mean_diff", mean_diff, weight )
                 entry.add("std_diff",  std_diff,  weight )
 
-    def accumulate(self, varname: str ) -> xa.Dataset:
-        varstats: StatsEntry = self._entries[varname]
+    def accumulate(self, statname: str ) -> xa.Dataset:
         accum_stats = {}
         coords = {}
-        for statname in ["mean","std","mean_diff","std_diff"]:
+        for varname in self.varnames:
+            varstats: StatsEntry = self._entries[varname]
             entries: Optional[List[xa.DataArray]] = varstats.entries( statname )
             squared = statname.startswith("std")
             if entries is not None:
@@ -77,13 +78,13 @@ class StatsAccumulator:
                 coords.update( astat.coords )
         return xa.Dataset( accum_stats, coords )
 
-    def save( self, varname: str, filepath: str ):
+    def save( self, statname: str, filepath: str ):
         os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-        accum_stats: xa.Dataset = self.accumulate(varname)
+        accum_stats: xa.Dataset = self.accumulate(statname)
         accum_stats.to_netcdf( filepath )
-        print(f" SSS: Save stats[{varname}] to {filepath}: {list(accum_stats.data_vars.keys())}")
-        for sname, vstat in accum_stats.data_vars.items():
-            print(f"   >> Entry[{varname}.{sname}]: dims={vstat.dims}, shape={vstat.shape}")
+        print(f" SSS: Save stats[{statname}] to {filepath}: {list(accum_stats.data_vars.keys())}")
+        for vname, vstat in accum_stats.data_vars.items():
+            print(f"   >> Entry[{statname}.{vname}]: dims={vstat.dims}, shape={vstat.shape}")
             if vstat.ndim > 0:  print(f"      --> sample: {vstat.values[0:8]}")
             else:               print(f"      --> sample: {vstat.values}")
 
@@ -106,8 +107,8 @@ class MERRA2DataProcessor(MERRA2Base):
         self.stats = StatsAccumulator()
 
     def save_stats(self):
-        for varname in self.stats.varnames:
-            self.stats.save( varname, self.stats_filepath( cfg().preprocess.version, varname ) )
+        for statname in self.stats.statnames:
+            self.stats.save( statname, self.stats_filepath( cfg().preprocess.version, statname ) )
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
