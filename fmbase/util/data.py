@@ -208,6 +208,7 @@ def extract_input_target_times(
       time coordinate will be shifted to refer to lead times relative to the
       final input timestep. So for inputs the times will end at lead time 0,
       for targets the time coordinates will refer to the lead times requested.
+      target_duration = largest target_lead_time.
   """
   print( f"extract_input_target_times: target_lead_times={target_lead_times}" )
   (target_lead_times, target_duration) = _process_target_lead_times_and_get_duration(target_lead_times)
