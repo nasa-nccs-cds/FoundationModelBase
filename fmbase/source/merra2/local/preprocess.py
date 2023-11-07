@@ -83,7 +83,7 @@ class StatsAccumulator:
         os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
         accum_stats: xa.Dataset = self.accumulate(varname)
         accum_stats.to_netcdf( filepath )
-        print(f" SSS: Save stats[{varname}] to {filepath}")
+        print(f" SSS: Save stats[{varname}] to {filepath}: {list(accum_stats.data_vars.keys())}")
         for sname, vstat in accum_stats.data_vars.items():
             print(f"   >> Entry[{varname}.{sname}]: dims={vstat.dims}, shape={vstat.shape}")
             if vstat.ndim > 0:  print(f"      --> sample: {vstat.values[0:8]}")
