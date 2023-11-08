@@ -74,7 +74,7 @@ class StatsAccumulator:
                     esum = eterm if (esum is None) else esum + eterm
                     wsum = wsum + w
                 astat = np.sqrt( esum/wsum ) if squared else esum/wsum
-                accum_stats[statname] = astat
+                accum_stats[varname] = astat
                 coords.update( astat.coords )
         return xa.Dataset( accum_stats, coords )
 
@@ -108,7 +108,8 @@ class MERRA2DataProcessor(MERRA2Base):
 
     def save_stats(self):
         for statname in self.stats.statnames:
-            self.stats.save( statname, self.stats_filepath( cfg().preprocess.version, statname ) )
+            filepath = self.stats_filepath( cfg().preprocess.version, statname )
+            self.stats.save( statname, filepath )
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
