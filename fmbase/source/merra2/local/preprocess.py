@@ -116,6 +116,7 @@ class MERRA2DataProcessor(MERRA2Base):
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = {}
         assert "{month}" in self.var_file_template, "{month} field missing from platform.cov_files parameter"
+        print( f"get_monthly_files({year})-> months: {months}:")
         for month in months:
             for collection, vlist in self.vars.items():
                 if collection.startswith("const"): dset_template: str = self.const_file_template.format( collection=collection )
@@ -135,6 +136,7 @@ class MERRA2DataProcessor(MERRA2Base):
                 for dvar in dvars:
                     self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
                 print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} min")
+            self.save_stats()
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
