@@ -1,11 +1,6 @@
 defaults:
   - platform: explore
   - preprocess: graphcast.2.37.1
-  - dataset: graphcast.2.37.1
-  - learning: demo1
   - task: demo1
 
 cid: graphcast.2.37.1
-
-
-#  - preprocess: graphcast-test1

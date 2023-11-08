@@ -1,9 +1,0 @@
-year_range: [2000,2001,1]
-month_range: [0,2,1]
-vars: { inst3_3d_asm_Np: [ 'T', 'U' ],
-        inst1_2d_asm_Nx: ['SLP'],
-        const_2d_ctm_Nx: [ 'PHIS'],
-        tavg1_2d_int_Nx: ['PRECLS'] }
-levels: [1000.0, 900.0, 800.0, 600.0, 400.0, 200.0, 100.0, 10.0, 1.0]
-
-
