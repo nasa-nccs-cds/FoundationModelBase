@@ -28,7 +28,7 @@ class MERRA2DataInterface(MERRA2Base):
 			if year == end.year:   month_range[1] = end.month + 1
 			for month in range( *month_range ):
 				slices.append( self.load_timestep( year, month, **kwargs ) )
-		return self.merge_batch( slices )
+		return self.merge_batch( slices ).expand_dims( "batch" )
 
 	@classmethod
 	def merge_batch(cls, slices: List[xa.Dataset] ) -> xa.Dataset:

@@ -238,8 +238,7 @@ def extract_input_target_times(
   return inputs, targets
 
 
-def _process_target_lead_times_and_get_duration(
-    target_lead_times: TargetLeadTimes) -> TimedeltaLike:
+def _process_target_lead_times_and_get_duration(  target_lead_times: TargetLeadTimes) -> TimedeltaLike:
   """Returns the minimum duration for the target lead times."""
   if isinstance(target_lead_times, slice):
     # A slice of lead times. xarray already accepts timedelta-like values for
@@ -285,11 +284,7 @@ def extract_inputs_targets_forcings(
 
   # `datetime` is needed by add_derived_vars but breaks autoregressive rollouts.
   dataset = dataset.drop_vars("datetime")
-
-  inputs, targets = extract_input_target_times(
-      dataset,
-      input_duration=input_duration,
-      target_lead_times=target_lead_times)
+  inputs, targets = extract_input_target_times( dataset, input_duration=input_duration, target_lead_times=target_lead_times)
 
   if set(forcing_variables) & set(target_variables):
     raise ValueError(
