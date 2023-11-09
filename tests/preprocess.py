@@ -5,10 +5,9 @@ from multiprocessing import Pool, cpu_count
 from fmbase.util.config import cfg
 import hydra, xarray as xa
 hydra.initialize( version_base=None, config_path="../config" )
-configure( 'explore-exp-test' )
+configure( 'explore-exp1' )
 
-#year_range = cfg().preprocess.year_range
-year_range = [1985,1993]
+year_range = cfg().preprocess.year_range
 years = list(range(*year_range))
 nproc = cpu_count() - 1
 
