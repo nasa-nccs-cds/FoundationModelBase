@@ -14,13 +14,18 @@ class StatsEntry:
         self._stats: Dict[str,List[xa.DataArray]] = {}
         self._varname = varname
 
-    def add(self, statname: str, mvar: xa.DataArray, weight: int ):
-        mvar.attrs['stat_weight'] = float(weight)
+    def merge(self, entry: "StatsEntry"):
+        for statname, mvars in entry._stats.items():
+            for mvar in mvars:
+                self.add( statname, mvar )
+
+    def add(self, statname: str, mvar: xa.DataArray, weight: int = None ):
+        if weight is not None: mvar.attrs['stat_weight'] = float(weight)
         elist = self._stats.setdefault(statname,[])
         elist.append( mvar )
-        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, size={mvar.size}, ndim={mvar.ndim}, weight={weight}")
-        if mvar.ndim > 0:  print( f"      --> sample: {mvar.values[0:8]}")
-        else:              print( f"      --> sample: {mvar.values}")
+#        print( f" SSS: Add stats entry[{self._varname}.{statname}]: dims={mvar.dims}, shape={mvar.shape}, size={mvar.size}, ndim={mvar.ndim}, weight={weight}")
+#        if mvar.ndim > 0:  print( f"      --> sample: {mvar.values[0:8]}")
+#        else:              print( f"      --> sample: {mvar.values}")
 
     def entries( self, statname: str ) -> Optional[List[xa.DataArray]]:
         return self._stats.get(statname)
@@ -31,9 +36,12 @@ class StatsAccumulator:
     def __init__(self):
         self._entries: Dict[str, StatsEntry] = {}
 
-    def _entry(self, varname: str ) -> StatsEntry:
-        entry: StatsEntry = self._entries.setdefault(varname,StatsEntry(varname))
-        return entry
+    @property
+    def entries(self) -> Dict[str, StatsEntry]:
+        return self._entries
+
+    def entry(self, varname: str) -> StatsEntry:
+        return self._entries.setdefault(varname,StatsEntry(varname))
 
     @property
     def varnames(self):
@@ -47,7 +55,7 @@ class StatsAccumulator:
         if istemporal or first_entry:
             mean: xa.DataArray = mvar.mean(dim=dims, skipna=True, keep_attrs=True)
             std: xa.DataArray = mvar.std(dim=dims, skipna=True, keep_attrs=True)
-            entry: StatsEntry= self._entry( varname )
+            entry: StatsEntry= self.entry( varname)
             entry.add( "mean", mean, weight )
             entry.add("std",  std, weight )
             if istemporal:
@@ -55,7 +63,7 @@ class StatsAccumulator:
                 weight = mvar.shape[0]
                 mean_diff: xa.DataArray = mvar_diff.mean( dim=dims, skipna=True, keep_attrs=True )
                 std_diff: xa.DataArray  = mvar_diff.std(  dim=dims, skipna=True, keep_attrs=True )
-                entry: StatsEntry = self._entry( varname )
+                entry: StatsEntry = self.entry( varname)
                 entry.add("mean_diff", mean_diff, weight )
                 entry.add("std_diff",  std_diff,  weight )
 
@@ -98,14 +106,20 @@ class MERRA2DataProcessor(MERRA2Base):
         self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
         self.tstep = cfg().preprocess.tstep
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
-        self.year_range = cfg().preprocess.year_range
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
         self.var_file_template = cfg().platform.dataset_files
         self.const_file_template = cfg().platform.constant_file
         self.stats = StatsAccumulator()
 
-    def save_stats(self):
+    def merge_stats( self, stats: List[StatsAccumulator] = None ):
+        for stats_accum in ([] if stats is None else stats):
+            for varname, new_entry in stats_accum.entries.items():
+                entry: StatsEntry = self.stats.entry(varname)
+                entry.merge( new_entry )
+
+    def save_stats(self, ext_stats: List[StatsAccumulator]=None ):
+        self.merge_stats( ext_stats )
         for statname in self.stats.statnames:
             filepath = self.stats_filepath( cfg().preprocess.version, statname )
             self.stats.save( statname, filepath )
@@ -126,16 +140,14 @@ class MERRA2DataProcessor(MERRA2Base):
                 dset_files[(collection,month)] = (gfiles, vlist)
         return dset_files
 
-    def process(self, **kwargs):
-        years = list(range( *self.year_range ))
-        for year in years:
-            dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = self.get_monthly_files( year )
-            for (collection,month), (dfiles,dvars) in dset_files.items():
-                t0 = time.time()
-                for dvar in dvars:
-                    self.process_subsample( collection, dvar, dfiles, year=year, month=month, **kwargs )
-                print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time()-t0)/60:.2f} min")
-            self.save_stats()
+    def process_year(self, year: int, **kwargs ):
+        dset_files: Dict[Tuple[str, int], Tuple[List[str], List[str]]] = self.get_monthly_files(year)
+        for (collection, month), (dfiles, dvars) in dset_files.items():
+            t0 = time.time()
+            for dvar in dvars:
+                self.process_subsample(collection, dvar, dfiles, year=year, month=month, **kwargs)
+            print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time() - t0) / 60:.2f} min")
+        return self.stats
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:
@@ -206,7 +218,7 @@ class MERRA2DataProcessor(MERRA2Base):
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
         filepath: str = self.variable_cache_filepath( cfg().preprocess.version, dvar, **kwargs )
-        reprocess: bool = kwargs.pop( 'reprocess', True )
+        reprocess: bool = kwargs.pop( 'reprocess', False )
         if (not os.path.exists(filepath)) or reprocess:
             print(f" ** Processing variable {dvar} in collection {collection}, args={kwargs}: {len(files)} files")
             t0 = time.time()
