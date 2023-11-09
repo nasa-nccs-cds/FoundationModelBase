@@ -103,7 +103,6 @@ class MERRA2DataProcessor(MERRA2Base):
         self.dmap: Dict = cfg().preprocess.dims
         self.var_file_template = cfg().platform.dataset_files
         self.const_file_template = cfg().platform.constant_file
-        self._subsample_coords: Dict[str,np.ndarray] = None
         self.stats = StatsAccumulator()
 
     def save_stats(self):
@@ -144,26 +143,25 @@ class MERRA2DataProcessor(MERRA2Base):
             return list(dset.data_vars.keys())
 
     def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
-        if self._subsample_coords is None:
-            self._subsample_coords = {}
-            if (self.levels is not None) and ('z' in dvar.dims):
-                self._subsample_coords['z'] = self.levels
-            if self.xres is not None:
-                if self.xext is  None:
-                    xc0 = dvar.coords['x'].values
-                    self.xext = [ xc0[0], xc0[-1]+self.xres/2 ]
-                self._subsample_coords['x'] = np.arange(self.xext[0],self.xext[1],self.xres)
-            elif self.xext is not None:
-                self._subsample_coords['x'] = slice(self.xext[0], self.xext[1])
+        subsample_coords = {}
+        if (self.levels is not None) and ('z' in dvar.dims):
+            subsample_coords['z'] = self.levels
+        if self.xres is not None:
+            if self.xext is  None:
+                xc0 = dvar.coords['x'].values
+                self.xext = [ xc0[0], xc0[-1]+self.xres/2 ]
+            subsample_coords['x'] = np.arange(self.xext[0],self.xext[1],self.xres)
+        elif self.xext is not None:
+            subsample_coords['x'] = slice(self.xext[0], self.xext[1])
 
-            if self.yres is not None:
-                if self.yext is  None:
-                    yc0 = dvar.coords['y'].values
-                    self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
-                self._subsample_coords['y'] = np.arange(self.yext[0],self.yext[1],self.yres)
-            elif self.yext is not None:
-                self._subsample_coords['y'] = slice(self.yext[0], self.yext[1])
-        return self._subsample_coords
+        if self.yres is not None:
+            if self.yext is  None:
+                yc0 = dvar.coords['y'].values
+                self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
+            subsample_coords['y'] = np.arange(self.yext[0],self.yext[1],self.yres)
+        elif self.yext is not None:
+            subsample_coords['y'] = slice(self.yext[0], self.yext[1])
+        return subsample_coords
 
 
     def subsample_1d(self, variable: xa.DataArray, global_attrs: Dict ) -> xa.DataArray:
