@@ -8,7 +8,8 @@ hydra.initialize( version_base=None, config_path="../config" )
 configure( 'explore-exp1' )
 
 year_range = cfg().preprocess.year_range
-years = list(range( year_range ))
+# years = list(range( year_range ))
+years = [1984,1985]
 nproc = cpu_count() - 1
 
 def process( year: int ) -> StatsAccumulator:
