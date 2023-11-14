@@ -5,7 +5,7 @@ from multiprocessing import Pool, cpu_count
 from fmbase.util.config import cfg
 import hydra, xarray as xa
 hydra.initialize( version_base=None, config_path="../config" )
-configure( 'explore-exp1' )
+configure( 'era5-small' )
 
 year_range = cfg().preprocess.year_range
 years = list(range(*year_range))
