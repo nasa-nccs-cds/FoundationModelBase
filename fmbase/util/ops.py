@@ -105,3 +105,26 @@ def get_levels_config( config: Dict ) -> Optional[np.ndarray]:
 def increasing( data: np.ndarray ) -> bool:
     xl = data.tolist()
     return xl[-1] > xl[0]
+
+
+def format_timedelta( td: np.timedelta64, form: str ) -> str:
+	s = td.astype('timedelta64[s]').astype(np.int32)
+	hours, remainder = divmod(s, 3600)
+	if form == "full":
+		minutes, seconds = divmod(remainder, 60)
+		return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+	elif form == "hr":
+		return f'{hours}hr'
+	else: raise Exception( f"format_timedelta: unknown form: {form}" )
+
+def format_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> str:
+	if tds is None: return " NA "
+	return str( [format_timedelta(td,form) for td in tds.values] ).replace('"','')
+
+def print_dict( title: str, data: Dict ):
+	print( f"\n -----> {title}:")
+	for k,v in data.items():
+		print( f"   ** {k}: {v}")
+
+def parse_file_parts(file_name):
+	return dict(part.split("-", 1) for part in file_name.split("_"))

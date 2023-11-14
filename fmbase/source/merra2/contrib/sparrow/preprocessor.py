@@ -56,11 +56,11 @@ class CovariateDataProcessor:
 
     @property
     def data_dir(self):
-        return cfg().platform.dataset_root.format( root=cfg().platform.root )
+        return cfg().platform.dataset_root.format( **cfg().platform )
 
     @property
     def cache_dir(self):
-        return cfg().platform.cache.format( root=cfg().platform.root )
+        return cfg().platform.cache.format( **cfg().platform )
 
     def get_yearly_files(self, collection, year) -> List[str]:
         months = list(range(*self.month_range))

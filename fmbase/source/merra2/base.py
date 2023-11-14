@@ -17,11 +17,11 @@ class MERRA2Base:
 
 	@property
 	def data_dir(self):
-		return cfg().platform.dataset_root.format(root=cfg().platform.root)
+		return cfg().platform.dataset_root.format(**cfg().platform)
 
 	@property
 	def results_dir(self):
-		base_dir = cfg().platform.processed.format(root=cfg().platform.root)
+		base_dir = cfg().platform.processed.format(**cfg().platform)
 		return f"{base_dir}/data/merra2"
 
 	def variable_cache_filepath(self, version: str, vname: str,  **kwargs) -> str:
