@@ -3,10 +3,15 @@ import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import glob, sys, os, time
+from xarray.core.resample import DataArrayResample
 from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config, increasing
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
+from enum import Enum
 
+class QType(Enum):
+    Intensive = 'intensive'
+    Extensive = 'extensive'
 
 class StatsEntry:
 
@@ -112,6 +117,11 @@ class MERRA2DataProcessor(MERRA2Base):
         self.const_file_template = cfg().platform.constant_file
         self.stats = StatsAccumulator()
 
+    @classmethod
+    def get_qtype( cls, vname: str) -> QType:
+        extensive_vars = cfg().preprocess.get('extensive',[])
+        return QType.Extensive if vname in extensive_vars else QType.Intensive
+
     def merge_stats( self, stats: List[StatsAccumulator] = None ):
         for stats_accum in ([] if stats is None else stats):
             for varname, new_entry in stats_accum.entries.items():
@@ -192,7 +202,7 @@ class MERRA2DataProcessor(MERRA2Base):
             newvar.attrs.update( varray.attrs )
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
 
-    def subsample(self, variable: xa.DataArray, global_attrs: Dict) -> xa.DataArray:
+    def subsample(self, variable: xa.DataArray, global_attrs: Dict, qtype: QType) -> xa.DataArray:
         cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
         varray: xa.DataArray = variable.rename(**cmap)
         tattrs: Dict = variable.coords['time'].attrs
@@ -205,7 +215,9 @@ class MERRA2DataProcessor(MERRA2Base):
         monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
         if   variable.shape[0] == 1:    newvar: xa.DataArray = varray
         elif monthly:                   newvar: xa.DataArray = varray.isel( time=global_attrs['month'] )
-        else:                           newvar: xa.DataArray = varray.resample(time=self.tstep).mean()
+        else:
+            resampled: DataArrayResample = varray.resample(time=self.tstep)
+            newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
 
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
@@ -226,8 +238,9 @@ class MERRA2DataProcessor(MERRA2Base):
             for file in sorted(files):
                 dset: xa.Dataset = xa.open_dataset(file)
                 dset_attrs = dict( collection=collection, **dset.attrs, **kwargs )
-                print( f"Processing var {dvar} from file {file}")
-                samples.append( self.subsample( dset.data_vars[dvar], dset_attrs ) )
+                qtype: QType = self.get_qtype(dvar)
+                print( f"Processing {qtype.value} var {dvar} from file {file}")
+                samples.append( self.subsample( dset.data_vars[dvar], dset_attrs, qtype) )
             if len(samples) == 0:
                 print( f"Found no files for variable {dvar} in collection {collection}")
             else:

@@ -9,6 +9,8 @@ vars: { inst3_3d_asm_Np: ['T', 'U', 'V', 'OMEGA', 'H', 'QV', 'PHIS' ],
         inst1_2d_asm_Nx: ['SLP', 'T2M', 'V10M', 'U10M', 'TQI', 'TQL', 'TQV'],
         const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'],
         tavg1_2d_int_Nx: ['PRECLS', 'SWNETTOA'] }
+extensive: [ 'PRECLS' ]
+
 input_variables: { 2m_temperature: 'T2M', mean_sea_level_pressure: 'SLP', 10m_v_component_of_wind: 'V10M', 10m_u_component_of_wind: 'U10M',
                    temperature: 'T', geopotential: 'H', u_component_of_wind: 'U', v_component_of_wind: 'V', vertical_velocity: 'OMEGA', total_precipitation_6hr: 'PRECLS',
                    specific_humidity: 'QV', geopotential_at_surface: 'PHIS', land_sea_mask: 'FRLAND', toa_incident_solar_radiation: 'SWNETTOA' }
