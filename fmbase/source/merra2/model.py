@@ -3,7 +3,6 @@ import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Dict
 from fmbase.util.ops import fmbdir
-from fmbase.source.merra2.preprocess import StatsAccumulator
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 
@@ -19,20 +18,12 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                        filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('results')}/{version}/{filename}"
 
-def stats_filepath( version: str, statname: str ) -> str:
-	return f"{fmbdir('results')}/{version}/stats/{statname}.nc"
-
 def load_cache_var( version: str, dvar: str, year: int, month: int, **kwargs  ) -> xa.DataArray:
 	coord_map: Dict = kwargs.pop('coords', {})
 	filepath = variable_cache_filepath( version, dvar, year=year, month=month )
 	darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 	cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
 	return darray.rename(cmap)
-
-def load_stats( version: str, statname: str, **kwargs ) -> xa.Dataset:
-	filepath = stats_filepath(version,statname)
-	varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
-	return varstats
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
@@ -92,10 +83,6 @@ def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:
 	result = result.transpose(..., "features")
 	return result
 
-def load_norm_data() -> Dict[str,xa.Dataset]:
-	version = cfg().task.dataset_version
-	stats = { statname: load_stats(version,statname) for statname in StatsAccumulator.statnames }
-	return stats
 
 
 

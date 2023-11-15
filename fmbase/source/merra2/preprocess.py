@@ -5,7 +5,7 @@ from typing import List, Union, Tuple, Optional, Dict, Type
 import glob, sys, os, time
 from xarray.core.resample import DataArrayResample
 from fmbase.util.ops import get_levels_config, increasing
-from fmbase.source.merra2.model import stats_filepath, variable_cache_filepath, fmbdir
+from fmbase.source.merra2.model import variable_cache_filepath, fmbdir
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
@@ -255,3 +255,15 @@ class MERRA2DataProcessor:
                 print(f"  Completed processing in time = {(time.time()-t0)/60} min")
         else:
             print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
+
+def stats_filepath( version: str, statname: str ) -> str:
+    return f"{fmbdir('results')}/{version}/stats/{statname}.nc"
+
+def load_stats( version: str, statname: str, **kwargs ) -> xa.Dataset:
+    filepath = stats_filepath(version,statname)
+    varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
+    return varstats
+def load_norm_data() -> Dict[str,xa.Dataset]:
+    version = cfg().task.dataset_version
+    stats = { statname: load_stats(version,statname) for statname in StatsAccumulator.statnames }
+    return stats
