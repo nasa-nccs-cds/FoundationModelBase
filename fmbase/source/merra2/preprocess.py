@@ -153,6 +153,7 @@ class MERRA2DataProcessor:
     def process_year(self, year: int, **kwargs ):
         dset_files: Dict[Tuple[str, int], Tuple[List[str], List[str]]] = self.get_monthly_files(year)
         for (collection, month), (dfiles, dvars) in dset_files.items():
+            print(f" -- -- Procesing collection {collection} for month {month}/{year}: {len(dset_files)} files, {len(dvars)} vars")
             t0 = time.time()
             for dvar in dvars:
                 self.process_subsample(collection, dvar, dfiles, year=year, month=month, **kwargs)

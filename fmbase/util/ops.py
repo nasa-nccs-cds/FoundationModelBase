@@ -131,6 +131,7 @@ def parse_file_parts(file_name):
 def resolve_links( pdict: DictConfig, pkey: str ) -> str:
 	pval = pdict[pkey]
 	while '{' in pval:
+		print( f" ..... resolve_links: '{pval}'" )
 		for key,val in pdict.items():
 			if '{' not in val:
 				try: pval = pval.format( key=val )
