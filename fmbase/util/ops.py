@@ -6,12 +6,12 @@ from .config import cfg
 import xarray as xa
 
 def xextent( raster: xa.DataArray ) -> Tuple[float,float,float,float]:
-    xc, yc = raster.coords['lon'].values, raster.coords['lat'].values
+    xc, yc = raster.coords['lon'].values.tolist(), raster.coords['lat'].values.tolist()
     extent = xc[0], xc[-1]+(xc[1]-xc[0]), yc[0], yc[-1]+(yc[1]-yc[0])
     return extent
 
 def dsextent( dset: xa.Dataset ) -> Tuple[float,float,float,float]:
-    xc, yc = dset.lon.values, dset.lat.values
+    xc, yc = dset.lon.values.tolist(), dset.lat.values.tolist()
     extent = xc[0], xc[-1]+(xc[1]-xc[0]), yc[0], yc[-1]+(yc[1]-yc[0])
     return extent
 

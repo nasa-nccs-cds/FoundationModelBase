@@ -1,7 +1,7 @@
 import xarray as xa
 import numpy as np
 from fmbase.util.config import cfg
-from typing import List, Dict
+from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
@@ -37,19 +37,19 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	merged['datetime'] = datetime
 	return merged
 
-def load_timestep( year: int, month: int, **kwargs ) -> xa.Dataset:
-	vlist: List[str] = cfg().task.input_variables + cfg().task.forcing_variables
-	levels: np.ndarray = get_levels_config(cfg().task)
-	version = cfg().task.dataset_version
+def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
+	vlist: Dict[str,str] = dict( task['input_variables'], **task['forcing_variables'] )
+	levels: Optional[np.ndarray] = get_levels_config(task)
+	version = task['dataset_version']
 	tsdata, coords, taxis = {}, {}, None
 	print(f"load_timestep({month}/{year})")
-	for vname in vlist:
-		varray: xa.DataArray = load_cache_var(version, vname, year, month, **kwargs)
+	for vname,dsname in vlist.items():
+		varray: xa.DataArray = load_cache_var(version, dsname, year, month, **kwargs)
 		coords.update( varray.coords )
 		if taxis is None:
-			assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {vname}"
+			assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {dsname}"
 			taxis = varray.coords['time']
-		print( f"load_var({vname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
+		print( f"load_var({dsname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
 		if "time" not in varray.dims:
 			varray = varray.expand_dims( dim={'time':taxis} )
 		if 'z' in varray.dims:
@@ -58,8 +58,10 @@ def load_timestep( year: int, month: int, **kwargs ) -> xa.Dataset:
 			for iL, lev in enumerate(levs):
 				level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
 				level_array.attrs['level'] = lev
+				level_array.attrs['dset_name'] = dsname
 				tsdata[f"{vname}.{iL}"] = level_array
 		else:
+			varray.attrs['dset_name'] = dsname
 			tsdata[vname] = varray
 	features = xa.DataArray( data=list(tsdata.keys()), name="features" )
 	print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims}, Features:" )
@@ -67,14 +69,14 @@ def load_timestep( year: int, month: int, **kwargs ) -> xa.Dataset:
 		print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 	return xa.Dataset( tsdata, coords )
 
-def load_batch( start: YearMonth, end: YearMonth, **kwargs ) -> xa.Dataset:
+def load_batch( start: YearMonth, end: YearMonth, task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
 	for year in range( start.year,end.year+1):
 		month_range = [0,12]
 		if year == start.year: month_range[0] = start.month
 		if year == end.year:   month_range[1] = end.month + 1
 		for month in range( *month_range ):
-			slices.append( load_timestep( year, month, **kwargs ) )
+			slices.append( load_timestep( year, month, task_config, **kwargs ) )
 	return merge_batch( slices ).expand_dims( "batch" )
 
 def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:

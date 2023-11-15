@@ -1,5 +1,0 @@
-dataset_version:    'graphcast.2.37'
-input_variables:    ['T', 'U' ]
-target_variables:   ['T', 'U' ]
-forcing_variables:  [ 'SWNETTOA' ]
-levels:             [1000, 800, 400, 100, 10, 1]

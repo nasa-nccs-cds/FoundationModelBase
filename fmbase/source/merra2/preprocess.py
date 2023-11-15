@@ -264,7 +264,6 @@ def load_stats( version: str, statname: str, **kwargs ) -> xa.Dataset:
     filepath = stats_filepath(version,statname)
     varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
     return varstats
-def load_norm_data() -> Dict[str,xa.Dataset]:
-    version = cfg().task.dataset_version
+def load_norm_data( version: str ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
     stats = { statname: load_stats(version,statname) for statname in StatsAccumulator.statnames }
     return stats
