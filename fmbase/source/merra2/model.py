@@ -3,7 +3,7 @@ import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Dict
 from fmbase.util.ops import fmbdir
-from source.merra2.preprocess import StatsAccumulator
+from fmbase.source.merra2.preprocess import StatsAccumulator
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 
