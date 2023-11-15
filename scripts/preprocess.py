@@ -1,4 +1,4 @@
-from source.merra2.preprocess import MERRA2DataProcessor, StatsAccumulator
+from fmbase.source.merra2.preprocess import MERRA2DataProcessor, StatsAccumulator
 from fmbase.util.config import configure
 from typing import List
 from multiprocessing import Pool, cpu_count
