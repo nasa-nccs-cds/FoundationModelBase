@@ -135,7 +135,7 @@ def resolve_links( pdict: DictConfig, pkey: str ) -> str:
 		if icnt > 8: raise Exception( f"resolve_links({pkey}): Unable to resolve links for '{pval}' with params {list(pdict.items())}")
 		for key,val in pdict.items():
 			if '{' not in val:
-				try: pval = pval.format( key=val )
+				try: pval = pval.format( **{key:val} )
 				except KeyError: pass
 	return pval
 
