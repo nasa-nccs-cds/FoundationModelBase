@@ -112,8 +112,8 @@ class MERRA2DataProcessor:
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
-        self.var_file_template = cfg().platform.dataset_file
-        self.const_file_template = cfg().platform.constant_file
+        self.var_file_template =  cfg().platform.dataset_file
+        self.const_file_template =  cfg().platform.constant_file
         self.stats = StatsAccumulator()
 
     @classmethod
