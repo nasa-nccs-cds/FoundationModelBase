@@ -136,6 +136,7 @@ def resolve_links( pdict: DictConfig, pkey: str ) -> str:
 			if '{' not in val:
 				try: pval = pval.format( key=val )
 				except KeyError: pass
+	print(f" ..... >>> result: '{pval}'")
 	return pval
 
 def fmbdir( dtype: str ) -> str:
