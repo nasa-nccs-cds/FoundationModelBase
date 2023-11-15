@@ -128,3 +128,14 @@ def print_dict( title: str, data: Dict ):
 
 def parse_file_parts(file_name):
 	return dict(part.split("-", 1) for part in file_name.split("_"))
+def resolve_links( pdict: DictConfig, pkey: str ) -> str:
+	pval = pdict[pkey]
+	while '{' in pval:
+		for key,val in pdict:
+			if '{' not in val:
+				try: pval = pval.format( key=val )
+				except KeyError: pass
+	return pval
+
+def fmbdir( dtype: str ) -> str:
+	return resolve_links( cfg().platform, dtype )

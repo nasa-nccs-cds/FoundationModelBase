@@ -1,1 +1,0 @@
-TODO:    Adapt code in .contrib

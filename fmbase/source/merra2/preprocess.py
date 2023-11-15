@@ -4,8 +4,8 @@ from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import glob, sys, os, time
 from xarray.core.resample import DataArrayResample
-from fmbase.source.merra2.base import MERRA2Base
 from fmbase.util.ops import get_levels_config, increasing
+from fmbase.source.merra2.model import stats_filepath, variable_cache_filepath, fmbdir
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
@@ -102,10 +102,9 @@ class StatsAccumulator:
             else:               print(f"      --> sample: {vstat.values}")
 
 
-class MERRA2DataProcessor(MERRA2Base):
+class MERRA2DataProcessor:
 
     def __init__(self):
-        MERRA2Base.__init__( self )
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
         self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
@@ -113,8 +112,8 @@ class MERRA2DataProcessor(MERRA2Base):
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
-        self.var_file_template = cfg().platform.dataset_files
-        self.const_file_template = cfg().platform.constant_file
+        self.var_file_template = fmbdir('dataset_files')
+        self.const_file_template = fmbdir('constant_file')
         self.stats = StatsAccumulator()
 
     @classmethod
@@ -131,11 +130,12 @@ class MERRA2DataProcessor(MERRA2Base):
     def save_stats(self, ext_stats: List[StatsAccumulator]=None ):
         self.merge_stats( ext_stats )
         for statname in self.stats.statnames:
-            filepath = self.stats_filepath( cfg().preprocess.version, statname )
+            filepath = stats_filepath( cfg().preprocess.version, statname )
             self.stats.save( statname, filepath )
 
     def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
+        dsroot: str = fmbdir('dataset_root')
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = {}
         assert "{month}" in self.var_file_template, "{month} field missing from platform.cov_files parameter"
@@ -144,9 +144,9 @@ class MERRA2DataProcessor(MERRA2Base):
             for collection, vlist in self.vars.items():
                 if collection.startswith("const"): dset_template: str = self.const_file_template.format( collection=collection )
                 else:                              dset_template: str = self.var_file_template.format(   collection=collection, year=year, month=f"{month + 1:0>2}")
-                dset_paths: str = f"{self.data_dir}/{dset_template}"
+                dset_paths: str = f"{dsroot}/{dset_template}"
                 gfiles: List[str] = glob.glob(dset_paths)
-                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={self.data_dir}")
+                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={dsroot}")
                 dset_files[(collection,month)] = (gfiles, vlist)
         return dset_files
 
@@ -229,7 +229,7 @@ class MERRA2DataProcessor(MERRA2Base):
         return newvar
 
     def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
-        filepath: str = self.variable_cache_filepath( cfg().preprocess.version, dvar, **kwargs )
+        filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **kwargs )
         reprocess: bool = kwargs.pop( 'reprocess', False )
         if (not os.path.exists(filepath)) or reprocess:
             print(f" ** Processing variable {dvar} in collection {collection}, args={kwargs}: {len(files)} files")

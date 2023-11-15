@@ -1,10 +1,11 @@
-from fmbase.source.merra2.local.preprocess import MERRA2DataProcessor, StatsAccumulator
+from source.merra2.preprocess import MERRA2DataProcessor, StatsAccumulator
 from fmbase.util.config import configure
-from typing import List, Union, Tuple, Optional, Dict, Type
+from typing import List
 from multiprocessing import Pool, cpu_count
 from fmbase.util.config import cfg
-import hydra, xarray as xa
-hydra.initialize( version_base=None, config_path="../config" )
+import hydra
+
+hydra.initialize( version_base=None, config_path="../config")
 configure( 'era5-small' )
 
 year_range = cfg().preprocess.year_range
