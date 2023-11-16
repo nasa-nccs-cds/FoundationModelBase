@@ -1,9 +1,7 @@
 import hydra, os
 from omegaconf import DictConfig, OmegaConf
 from fmbase.util.ops import fmbdir
-from graphcast import checkpoint
 from typing import Any, Mapping, Sequence, Tuple, Union
-from graphcast.graphcast import ModelConfig, TaskConfig, CheckPoint
 
 def cfg() -> DictConfig:
     return Configuration.instance().cfg
@@ -29,15 +27,3 @@ class Configuration:
     def instance(cls) -> "Configuration":
         return cls._instance
 
-def config_files() -> Tuple[ModelConfig,TaskConfig]:
-    root = fmbdir('model')
-    params_file = cfg().task.params
-    pfilepath = f"{root}/params/{params_file}.npz"
-    with open(pfilepath, "rb") as f:
-        ckpt = checkpoint.load(f, CheckPoint)
-        model_config = ckpt.model_config
-        task_config = ckpt.task_config
-        print("Model description:\n", ckpt.description, "\n")
-        print(f" >> model_config: {model_config}")
-        print(f" >> task_config:  {task_config}")
-    return model_config, task_config
