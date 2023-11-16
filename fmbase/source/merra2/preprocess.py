@@ -258,7 +258,7 @@ class MERRA2DataProcessor:
             print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
 
 def stats_filepath( version: str, statname: str ) -> str:
-    return f"{fmbdir('results')}/{version}/stats/{statname}.nc"
+    return f"{fmbdir('processed')}/{version}/stats/{statname}.nc"
 
 def load_stats( version: str, statname: str, **kwargs ) -> xa.Dataset:
     filepath = stats_filepath(version,statname)
