@@ -130,7 +130,7 @@ def parse_file_parts(file_name):
 	return dict(part.split("-", 1) for part in file_name.split("_"))
 
 def pformat( param: str, params: Dict[str,str] ) -> str:
-	try: return param.format(params)
+	try: return param.format(**params)
 	except KeyError: return param
 
 def resolve_links( pdict: DictConfig, pkey: str ) -> str:
