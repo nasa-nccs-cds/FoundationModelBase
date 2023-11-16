@@ -128,16 +128,16 @@ def print_dict( title: str, data: Dict ):
 
 def parse_file_parts(file_name):
 	return dict(part.split("-", 1) for part in file_name.split("_"))
+
+def pformat( param: str, params: Dict[str,str] ) -> str:
+	try: return param.format(params)
+	except KeyError: return param
+
 def resolve_links( pdict: DictConfig, pkey: str ) -> str:
-	pval, icnt = pdict[pkey], 0
-	while '{' in pval:
-		icnt = icnt + 1
-		if icnt > 8: raise Exception( f"resolve_links({pkey}): Unable to resolve links for '{pval}' with params {list(pdict.items())}")
-		for key,val in pdict.items():
-			if '{' not in val:
-				try: pval = pval.format( **{key:val} )
-				except KeyError: pass
-	return pval
+	parms = dict(pdict.items())
+	for irecur in range(8):
+		parms = { pkey: pformat(pval,parms) for pkey,pval in parms.items() }
+	return parms[pkey]
 
 def fmbdir( dtype: str ) -> str:
 	return resolve_links( cfg().platform, dtype )
