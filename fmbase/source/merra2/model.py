@@ -38,7 +38,7 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
-	vlist: Dict[str,str] = dict( task['input_variables'], **task['forcing_variables'] )
+	vlist: Dict[str,str] = task['input_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	tsdata, coords, taxis = {}, {}, None
