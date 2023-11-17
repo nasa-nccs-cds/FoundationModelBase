@@ -49,6 +49,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 		if taxis is None:
 			assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {dsname}"
 			taxis = varray.coords['time']
+			print(f" ---> time coord: {taxis}")
 		print( f"load_var({dsname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
 		if "time" not in varray.dims:
 			varray = varray.expand_dims( dim={'time':taxis} )
