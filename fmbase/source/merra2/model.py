@@ -33,27 +33,19 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
-	print( f"\n &&&&&&&& merge_batch: \n --> datetime = {merged.coords['datetime']}\n --> time = {merged.coords['time']}")
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vlist: Dict[str, str] = task['input_variables']
-	clist: Dict[str, str] = task['constant_variables']
+#	clist: Dict[str, str] = task['constant_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
-	tsdata, coords, taxis = {}, {}, None
+	tsdata, coords = {}, {}
 	print(f"load_timestep({month}/{year})")
 	for vname,dsname in vlist.items():
 		varray: xa.DataArray = load_cache_var(version, dsname, year, month, **kwargs)
 		coords.update( varray.coords )
-		if taxis is None:
-			assert 'time' in varray.coords.keys(), f"Constant DataArray can't be first in model vars configuration: {dsname}"
-			taxis = varray.coords['time']
-			print(f" ---> time coord: {taxis}")
 		print( f"load_var({dsname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
-		# if ("time" not in varray.dims) and (vname not in clist):
-		# 	print( f"\n _________________ ADD TIME COORD: vname{varray.dims} _________________ \n")
-		# 	varray = varray.expand_dims( dim={'time':taxis} )
 		if 'z' in varray.dims:
 			print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 			levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
