@@ -28,13 +28,11 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, **kwargs  ) 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
 	sample: xa.Dataset = slices[0]
-	datetime = None
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
-		elif datetime is None:
-			datetime = dvar.coords['time']
-	merged['datetime'] = datetime
+		elif merged.coords.get('datetime') is None:
+			merged.coords['datetime'] = dvar.coords.get('time')
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
