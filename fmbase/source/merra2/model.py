@@ -37,7 +37,8 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
-	vlist: Dict[str,str] = task['input_variables']
+	vlist: Dict[str, str] = task['input_variables']
+	clist: Dict[str, str] = task['constant_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	tsdata, coords, taxis = {}, {}, None
@@ -50,8 +51,9 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 			taxis = varray.coords['time']
 			print(f" ---> time coord: {taxis}")
 		print( f"load_var({dsname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
-		if "time" not in varray.dims:
-			varray = varray.expand_dims( dim={'time':taxis} )
+		# if ("time" not in varray.dims) and (vname not in clist):
+		# 	print( f"\n _________________ ADD TIME COORD: vname{varray.dims} _________________ \n")
+		# 	varray = varray.expand_dims( dim={'time':taxis} )
 		if 'z' in varray.dims:
 			print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 			levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
