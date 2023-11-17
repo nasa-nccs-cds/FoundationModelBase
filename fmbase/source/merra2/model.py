@@ -77,7 +77,7 @@ def load_batch( start: YearMonth, end: YearMonth, task_config: Dict, **kwargs ) 
 		if year == end.year:   month_range[1] = end.month + 1
 		for month in range( *month_range ):
 			slices.append( load_timestep( year, month, task_config, **kwargs ) )
-	return merge_batch( slices ).expand_dims( "batch" )
+	return merge_batch( slices )
 
 def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:
 	features = xa.DataArray(data=list(data_batch.data_vars.keys()), name="features")
