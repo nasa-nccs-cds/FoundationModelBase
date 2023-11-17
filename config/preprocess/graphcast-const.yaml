@@ -5,7 +5,7 @@ xres: 2.0
 yres: 2.0
 levels:  [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
 dims: { lon: x, lat: y, lev: z }
-vars: { const_2d_ctm_Nx: [ 'PHIS', 'FRLAND' ],   tavg1_2d_int_Nx: ['SWNETTOA'] }
+vars: { const_2d_ctm_Nx: [ 'PHIS', 'FRLAND' ] }
 
 
 
