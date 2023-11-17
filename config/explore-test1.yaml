@@ -1,6 +1,5 @@
 defaults:
   - platform: explore
   - preprocess: graphcast.2.37.1
-  - task: demo1
 
 cid: graphcast.2.37.1

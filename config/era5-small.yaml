@@ -1,6 +1,5 @@
 defaults:
   - platform: explore
   - preprocess: era5-small
-  - task: demo1
 
 cid: era5-small
