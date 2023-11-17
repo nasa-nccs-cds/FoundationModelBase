@@ -33,6 +33,9 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
+	print( f"\n ~~~~~~~~~~~~~~~~~~ merged batch ~~~~~~~~~~~~~~~~~~ " )
+	for fname, fdata in merged.data_vars.items():
+		print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
