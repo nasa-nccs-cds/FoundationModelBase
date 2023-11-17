@@ -1,0 +1,5 @@
+defaults:
+  - platform: explore
+  - preprocess: graphcast-const
+
+cid: era5-const
