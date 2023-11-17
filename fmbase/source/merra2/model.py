@@ -28,7 +28,7 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, **kwargs  ) 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
 	if 'datetime' not in merged.coords:
-		merged.coords['datetime'] = merged.coords['time']
+		merged.coords['datetime'] = merged.coords['time'].expand_dims("batch")
 	sample: xa.Dataset = slices[0]
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
