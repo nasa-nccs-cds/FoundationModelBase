@@ -26,6 +26,9 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, **kwargs  ) 
 	return darray.rename(cmap)
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
+	print(f"\n ~~~~~~~~~~~~~~~~~~ merge {len(slices)} datasets, sample dataset:")
+	for fname, fdata in slices[0].data_vars.items():
+		print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
 	if 'datetime' not in merged.coords:
 		merged.coords['datetime'] = merged.coords['time'].expand_dims("batch")
@@ -33,7 +36,7 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
-	print( f"\n ~~~~~~~~~~~~~~~~~~ merged batch ~~~~~~~~~~~~~~~~~~ " )
+	print( f"\n ~~~~~~~~~~~~~~~~~~ merged datasets ~~~~~~~~~~~~~~~~~~ " )
 	for fname, fdata in merged.data_vars.items():
 		print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 	return merged
