@@ -264,7 +264,7 @@ def load_stats( task_config: Dict , statname: str, **kwargs ) -> xa.Dataset:
     version = task_config['dataset_version']
     filepath = stats_filepath(version,statname)
     varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
-    model_varname_map = { v: k for k, v in task_config['input_variables'].items() if k in varstats.data_vars }
+    model_varname_map = { v: k for k, v in task_config['input_variables'].items() if v in varstats.data_vars }
     print( f" \n ***** model_varname_map = {model_varname_map}\n")
     return varstats.rename( model_varname_map )
 def load_norm_data( task_config: Dict ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
