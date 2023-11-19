@@ -36,7 +36,7 @@ class StatsEntry:
         return self._stats.get(statname)
 
 class StatsAccumulator:
-    statnames = ["mean", "std", "mean_diff", "std_diff"]
+    statnames = ["mean", "std", "std_diff"]
 
     def __init__(self):
         self._entries: Dict[str, StatsEntry] = {}
