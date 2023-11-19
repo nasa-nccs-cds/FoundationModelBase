@@ -267,5 +267,7 @@ def load_stats( task_config: Dict , statname: str, **kwargs ) -> xa.Dataset:
     model_varname_map = { v: k for k, v in task_config['input_variables'].items() if v in varstats.data_vars }
     return varstats.rename( model_varname_map )
 def load_norm_data( task_config: Dict ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
-    stats = { statname: load_stats(task_config,statname) for statname in StatsAccumulator.statnames }
+    model_statnames: Dict[str,str] = task_config.get( 'statnames' )
+    stats = { model_statnames[statname]: load_stats(task_config,statname) for statname in StatsAccumulator.statnames }
+    print( f" \n ---------------->>>> load_norm_data: {list(stats.keys())}\n")
     return stats
