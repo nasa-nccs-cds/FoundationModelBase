@@ -9,6 +9,11 @@ from fmbase.source.merra2.model import variable_cache_filepath, fmbdir
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
+def dump_dset( name: str, dset: xa.Dataset ):
+    print( f"\n ---- dump_dset {name}:")
+    for vname, vdata in dset.data_vars.items():
+        print( f"  ** {vname}{vdata.dims}-> {vdata.shape} ")
+
 class QType(Enum):
     Intensive = 'intensive'
     Extensive = 'extensive'
@@ -269,5 +274,7 @@ def load_stats( task_config: Dict , statname: str, **kwargs ) -> xa.Dataset:
 def load_norm_data( task_config: Dict ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
     model_statnames: Dict[str,str] = task_config.get( 'statnames' )
     stats = { model_statnames[statname]: load_stats(task_config,statname) for statname in StatsAccumulator.statnames }
-    print( f" \n ---------------->>>> load_norm_data: {list(stats.keys())}\n")
+    print( f" \n ---------------->>>> load_norm_data:     ")
+    for sname, sdata in stats.items():
+        dump_dset(sname,sdata)
     return stats
