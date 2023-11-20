@@ -18,8 +18,8 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                        filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
-def load_cache_var( version: str, dvar: str, year: int, month: int, **kwargs  ) -> xa.DataArray:
-	coord_map: Dict = kwargs.pop('coords', {})
+def load_cache_var( version: str, dvar: str, year: int, month: int, task: Dict, **kwargs  ) -> xa.DataArray:
+	coord_map: Dict = task.get('coords',{})
 	filepath = variable_cache_filepath( version, dvar, year=year, month=month )
 	darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 	cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
@@ -48,7 +48,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	tsdata, coords = {}, {}
 	print(f"load_timestep({month}/{year})")
 	for vname,dsname in vlist.items():
-		varray: xa.DataArray = load_cache_var(version, dsname, year, month, **kwargs)
+		varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
 		coords.update( varray.coords )
 		print( f"load_var({dsname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
 		if 'z' in varray.dims:
