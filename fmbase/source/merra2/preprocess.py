@@ -271,12 +271,8 @@ def load_stats( task_config: Dict , statname: str, **kwargs ) -> xa.Dataset:
     varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
     model_varname_map = { v: k for k, v in task_config['input_variables'].items() if v in varstats.data_vars }
     model_coord_map   = { k: v for k, v in task_config['coords'].items() if k in varstats.coords }
-    print( f" load_stats:\n   model_coord_map = {model_coord_map}\n   varstats coords = {list(varstats.coords.keys())}")
     return varstats.rename( **model_varname_map, **model_coord_map )
 def load_norm_data( task_config: Dict ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
     model_statnames: Dict[str,str] = task_config.get( 'statnames' )
     stats = { model_statnames[statname]: load_stats(task_config,statname) for statname in StatsAccumulator.statnames }
-    print( f" \n ---------------->>>> load_norm_data:     ")
-    for sname, sdata in stats.items():
-        dump_dset(sname,sdata)
     return stats
