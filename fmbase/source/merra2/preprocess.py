@@ -218,6 +218,7 @@ class MERRA2DataProcessor:
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
         print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, %nan={pctnan(variable)}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
+        print(f"      -------> var attrs: {variable.attrs}")
 
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         varray = varray.interp(**scoords, assume_sorted=zsorted)
