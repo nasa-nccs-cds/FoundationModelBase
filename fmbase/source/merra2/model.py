@@ -6,7 +6,9 @@ from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 
-def nnan(varray: xa.DataArray): return np.count_nonzero(np.isnan(varray.values))
+def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
+def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
+
 @dataclass(eq=True,repr=True,frozen=True,order=True)
 class YearMonth:
 	year: int
