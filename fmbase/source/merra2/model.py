@@ -50,7 +50,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	for vname,dsname in vlist.items():
 		varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
 		coords.update( varray.coords )
-		print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, mean={varray.values.mean()}, nnan={nnan(varray)}/{varray.size}")
+		print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, mean={varray.values.mean()}, nnan={pctnan(varray)}")
 		if 'z' in varray.dims:
 			levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
 			for iL, lev in enumerate(levs):
