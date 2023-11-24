@@ -6,6 +6,7 @@ from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 
+def nnan(varray: xa.DataArray): return np.count_nonzero(np.isnan(varray.values))
 @dataclass(eq=True,repr=True,frozen=True,order=True)
 class YearMonth:
 	year: int
@@ -35,9 +36,6 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
-	print( f"\n ~~~~~~~~~~~~~~~~~~ merged datasets, cvars={cvars}: " )
-	for fname, fdata in merged.data_vars.items():
-		print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
@@ -50,9 +48,8 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	for vname,dsname in vlist.items():
 		varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
 		coords.update( varray.coords )
-		print( f"load_var({dsname}): name={varray.name}, shape={varray.shape}, dims={varray.dims}, levels={levels}")
+		print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, mean={varray.values.mean()}, nnan={nnan(varray)}/{varray.size}")
 		if 'z' in varray.dims:
-			print(f" ---> Levels Coord= {varray.coords['z'].values.tolist()}")
 			levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
 			for iL, lev in enumerate(levs):
 				level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
@@ -62,10 +59,6 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 		else:
 			varray.attrs['dset_name'] = dsname
 			tsdata[vname] = varray
-	features = xa.DataArray( data=list(tsdata.keys()), name="features" )
-	print( f"Created coord {features.name}: shape={features.shape}, dims={features.dims}, Features:" )
-	for fname, fdata in tsdata.items():
-		print( f" ** {fname}{fdata.dims}: shape={fdata.shape}")
 	return xa.Dataset( tsdata, coords )
 
 def load_batch( start: YearMonth, end: YearMonth, task_config: Dict, **kwargs ) -> xa.Dataset:
