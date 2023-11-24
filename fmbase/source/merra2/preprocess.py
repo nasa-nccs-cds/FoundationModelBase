@@ -9,6 +9,9 @@ from fmbase.source.merra2.model import variable_cache_filepath, fmbdir
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
+def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
+def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray) * 100.0 / varray.size:.2f}%"
+
 def dump_dset( name: str, dset: xa.Dataset ):
     print( f"\n ---- dump_dset {name}:")
     for vname, vdata in dset.data_vars.items():
@@ -208,12 +211,13 @@ class MERRA2DataProcessor:
             newvar.attrs.update( varray.attrs )
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
 
+
     def subsample(self, variable: xa.DataArray, global_attrs: Dict, qtype: QType) -> xa.DataArray:
         cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
         varray: xa.DataArray = variable.rename(**cmap)
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
-        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
+        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, %nan={pctnan(variable)}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
 
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         varray = varray.interp(**scoords, assume_sorted=zsorted)
