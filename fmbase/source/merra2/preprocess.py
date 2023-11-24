@@ -10,7 +10,12 @@ np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
+def nmissing(varray: xa.DataArray) -> int:
+    mval = varray.attrs['fmissing_value']
+    return np.count_nonzero(varray.values == mval)
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray) * 100.0 / varray.size:.2f}%"
+def pctmissing(varray: xa.DataArray) -> str:
+    return f"{nmissing(varray) * 100.0 / varray.size:.2f}%"
 
 def dump_dset( name: str, dset: xa.Dataset ):
     print( f"\n ---- dump_dset {name}:")
@@ -217,8 +222,8 @@ class MERRA2DataProcessor:
         varray: xa.DataArray = variable.rename(**cmap)
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
-        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, %nan={pctnan(variable)}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
-        print(f"      -------> var attrs: {variable.attrs}")
+        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, %nan={pctnan(variable)}, "
+              f"%missing={pctmissing(variable)}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
 
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         varray = varray.interp(**scoords, assume_sorted=zsorted)
