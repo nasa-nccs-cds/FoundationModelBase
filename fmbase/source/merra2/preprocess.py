@@ -1,6 +1,6 @@
 import xarray as xa
 import numpy as np
-from fmbase.util.config import cfg
+from fmbase.util.hydra_config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type
 import glob, sys, os, time
 from xarray.core.resample import DataArrayResample

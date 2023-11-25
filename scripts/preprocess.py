@@ -1,8 +1,8 @@
 from fmbase.source.merra2.preprocess import MERRA2DataProcessor, StatsAccumulator
-from fmbase.util.config import configure
+from fmbase.util.hydra_config import configure
 from typing import List
 from multiprocessing import Pool, cpu_count
-from fmbase.util.config import cfg
+from fmbase.util.hydra_config import cfg
 import hydra
 
 hydra.initialize( version_base=None, config_path="../config")
