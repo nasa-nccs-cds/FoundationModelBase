@@ -12,7 +12,7 @@ Framework for providing reanalysis data to FoundationModel/DigitalTwin training 
 
     > conda create -n fmbase -c conda-forge 
     > conda activate fmbase
-    > conda install -c conda-forge h5py h5netcdf pydap numpy xarray dask matplotlib scipy netCDF4
+    > conda install -c conda-forge ipython h5py h5netcdf pydap numpy xarray dask matplotlib scipy netCDF4
     > pip install hydra-core --upgrade
 
 
