@@ -2,7 +2,7 @@ import os, glob, numpy as np
 from .parse import parse
 from omegaconf import DictConfig, OmegaConf
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
-from .hydra_config import cfg
+from .config import cfg
 import xarray as xa
 
 def xextent( raster: xa.DataArray ) -> Tuple[float,float,float,float]:
