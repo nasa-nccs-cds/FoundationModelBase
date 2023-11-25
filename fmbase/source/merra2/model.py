@@ -1,6 +1,5 @@
 import xarray as xa
 import numpy as np
-from fmbase.util.hydra_config import cfg
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
