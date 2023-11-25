@@ -3,8 +3,8 @@ from omegaconf import DictConfig, OmegaConf
 def cfg() -> DictConfig:
     return Configuration.instance().cfg
 
-def configure(config_name: str):
-    Configuration.init( config_name )
+def configure(config_name: str, config_path: str):
+    Configuration.init( config_name, config_path )
 
 class Configuration:
     _instance = None
