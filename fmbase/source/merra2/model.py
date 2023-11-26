@@ -44,7 +44,6 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vlist: Dict[str, str] = task['input_variables']
-#	clist: Dict[str, str] = task['constant_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	tsdata, coords = {}, {}
@@ -59,11 +58,16 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 				level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
 				level_array.attrs['level'] = lev
 				level_array.attrs['dset_name'] = dsname
-				tsdata[f"{vname}.{iL}"] = level_array
+				tsdata[f"{vname}.{iL}"] = replace_nans( level_array )
 		else:
 			varray.attrs['dset_name'] = dsname
 			tsdata[vname] = varray
 	return xa.Dataset( tsdata, coords )
+
+def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
+	adata: np.ndarray = level_array.values.flatten()
+	adata[ np.isnan( adata ) ] = np.nanmean( adata )
+	return level_array.copy( data=adata.reshape(level_array.shape) )
 
 def load_batch( start: YearMonth, end: YearMonth, task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
