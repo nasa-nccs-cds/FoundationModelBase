@@ -185,7 +185,7 @@ class MERRA2DataProcessor:
         if self.xres is not None:
             if self.xext is  None:
                 xc0 = dvar.coords['x'].values
-                self.xext = [ xc0[0], xc0[-1]+self.xres/2 ]
+                self.xext = [ xc0[0], xc0[-1] ]
             subsample_coords['x'] = np.arange(self.xext[0],self.xext[1],self.xres)
         elif self.xext is not None:
             subsample_coords['x'] = slice(self.xext[0], self.xext[1])
@@ -193,7 +193,7 @@ class MERRA2DataProcessor:
         if self.yres is not None:
             if self.yext is  None:
                 yc0 = dvar.coords['y'].values
-                self.yext = [ yc0[0], yc0[-1]+self.yres/2 ]
+                self.yext = [ yc0[0], yc0[-1] ]
             subsample_coords['y'] = np.arange(self.yext[0],self.yext[1],self.yres)
         elif self.yext is not None:
             subsample_coords['y'] = slice(self.yext[0], self.yext[1])
