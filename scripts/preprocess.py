@@ -10,7 +10,7 @@ configure( 'era5-small' )
 
 year_range = cfg().preprocess.year_range
 years = list(range(*year_range))
-nproc = cpu_count() - 1
+nproc = cpu_count()//1.2
 
 def process( year: int ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
