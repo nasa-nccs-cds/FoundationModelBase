@@ -11,7 +11,7 @@ from enum import Enum
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def nmissing(varray: xa.DataArray) -> int:
-    mval = varray.attrs['fmissing_value']
+    mval = varray.attrs.get('fmissing_value',-9999)
     return np.count_nonzero(varray.values == mval)
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray) * 100.0 / varray.size:.2f}%"
 def pctmissing(varray: xa.DataArray) -> str:
