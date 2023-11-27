@@ -26,7 +26,7 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, task: Dict, 
 	darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 	if darray.ndim > 2:
 		tval = darray.values[0,0,-1] if darray.ndim == 3 else darray.values[0,0,0,-1]
-		print( f" ***>> load_cache_var({dvar}): dims={darray.dims} shape={darray.shape} tval={tval}" )
+		print( f" ***>> load_cache_var({dvar}): dims={darray.dims} shape={darray.shape} tval={tval}, filepath={filepath}" )
 	cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
 	return darray.rename(cmap)
 
