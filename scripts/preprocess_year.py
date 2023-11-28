@@ -10,7 +10,7 @@ configure( 'merra2-test' )
 
 nproc = round(cpu_count()*0.9)
 year = 1985
-months = range(1,13,1)
+months = list(range(0,12,1))
 
 def process( month: int ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
