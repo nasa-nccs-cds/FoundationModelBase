@@ -8,17 +8,18 @@ import hydra
 hydra.initialize( version_base=None, config_path="../config" )
 configure( 'merra2-test' )
 
+year_range = cfg().preprocess.year_range
+years = list(range(*year_range))
 nproc = round(cpu_count()*0.9)
-year = 1985
-months = range(1,13,1)
 
-def process( month: int ) -> StatsAccumulator:
+def process( year: int ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
-	return reader.process_year( year, month=month, reprocess=True )
+	return reader.process_year( year, reprocess=True )
 
 if __name__ == '__main__':
-	print( f"Multiprocessing months {months} for year {year} with {nproc} procs")
+	print( f"Multiprocessing {len(years)} years with {nproc} procs")
 	with Pool(processes=nproc) as pool:
-		proc_stats: List[StatsAccumulator] = pool.map( process, months )
+		proc_stats: List[StatsAccumulator] = pool.map( process, years )
 		MERRA2DataProcessor().save_stats(proc_stats)
+
 
