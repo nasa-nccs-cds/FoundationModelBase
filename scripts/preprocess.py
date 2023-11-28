@@ -14,7 +14,7 @@ nproc = round(cpu_count()*0.9)
 
 def process( year: int ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
-	return reader.process_year( year, reprocess=False )
+	return reader.process_year( year, reprocess=True )
 
 if __name__ == '__main__':
 	print( f"Multiprocessing {len(years)} years with {nproc} procs")
