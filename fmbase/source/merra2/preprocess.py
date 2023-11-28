@@ -1,7 +1,7 @@
 import xarray as xa
 import numpy as np
 from fmbase.util.config import cfg
-from typing import List, Union, Tuple, Optional, Dict, Type
+from typing import List, Union, Tuple, Optional, Dict, Type, Any
 import glob, sys, os, time
 from xarray.core.resample import DataArrayResample
 from fmbase.util.ops import get_levels_config, increasing
@@ -179,14 +179,15 @@ class MERRA2DataProcessor:
             return list(dset.data_vars.keys())
 
     def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
-        subsample_coords = {}
+        subsample_coords: Dict[str,Any] = {}
         if (self.levels is not None) and ('z' in dvar.dims):
             subsample_coords['z'] = self.levels
         if self.xres is not None:
             if self.xext is  None:
                 xc0 = dvar.coords['x'].values
                 self.xext = [ xc0[0], xc0[-1] ]
-            subsample_coords['x'] = np.arange(self.xext[0],self.xext[1],self.xres)
+            dx = self.xres / 2
+            subsample_coords['x'] = np.arange(self.xext[0]-dx,self.xext[1]+dx,self.xres)
         elif self.xext is not None:
             subsample_coords['x'] = slice(self.xext[0], self.xext[1])
 
@@ -194,7 +195,8 @@ class MERRA2DataProcessor:
             if self.yext is  None:
                 yc0 = dvar.coords['y'].values
                 self.yext = [ yc0[0], yc0[-1] ]
-            subsample_coords['y'] = np.arange(self.yext[0],self.yext[1],self.yres)
+            dy = self.yres/2
+            subsample_coords['y'] = np.arange(self.yext[0]-dy,self.yext[1]+dy,self.yres)
         elif self.yext is not None:
             subsample_coords['y'] = slice(self.yext[0], self.yext[1])
         return subsample_coords
