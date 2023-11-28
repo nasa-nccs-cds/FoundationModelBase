@@ -43,25 +43,27 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	return merged
 
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
+	vnames = kwargs.pop('vars',None)
 	vlist: Dict[str, str] = task['input_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	tsdata, coords = {}, {}
-	print(f"load_timestep({month}/{year})")
+	print(f"  load_timestep({month}/{year}), kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
-		varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
-		coords.update( varray.coords )
-		print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
-		if 'z' in varray.dims:
-			levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
-			for iL, lev in enumerate(levs):
-				level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
-				level_array.attrs['level'] = lev
-				level_array.attrs['dset_name'] = dsname
-				tsdata[f"{vname}.{iL}"] = replace_nans( level_array )
-		else:
-			varray.attrs['dset_name'] = dsname
-			tsdata[vname] = varray
+		if (vnames is None) or (vname in vnames):
+			varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
+			coords.update( varray.coords )
+			print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
+			if 'z' in varray.dims:
+				levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
+				for iL, lev in enumerate(levs):
+					level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
+					level_array.attrs['level'] = lev
+					level_array.attrs['dset_name'] = dsname
+					tsdata[f"{vname}.{iL}"] = replace_nans( level_array )
+			else:
+				varray.attrs['dset_name'] = dsname
+				tsdata[vname] = varray
 	return xa.Dataset( tsdata, coords )
 
 def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
