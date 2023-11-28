@@ -164,7 +164,7 @@ class MERRA2DataProcessor:
         return dset_files
 
     def process_year(self, year: int, **kwargs ):
-        smonth = kwargs.get('month',-1)
+        smonth = kwargs.pop('month',-1)
         dset_files: Dict[Tuple[str, int], Tuple[List[str], List[str]]] = self.get_monthly_files(year)
         for (collection, month), (dfiles, dvars) in dset_files.items():
             if smonth in [-1,month]:
