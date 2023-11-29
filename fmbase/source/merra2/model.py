@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
+from fmbase.util.config import cfg
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
@@ -47,22 +48,24 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vlist: Dict[str, str] = task['input_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
+	dmap = { v:k for k,v in cfg().preprocess.get( 'dims', {} ) }
+	zc = dmap.get('z','z')
 	tsdata, coords = {}, {}
 	print(f"  load_timestep({month}/{year}), kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
 			varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
 			coords.update( varray.coords )
-			print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
-			if 'z' in varray.dims:
-				levs: List[str] = varray.coords['z'].values.tolist() if levels is None else levels
+			print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
+			if zc in varray.dims:
+				levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
 				for iL, lev in enumerate(levs):
-					level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
+					level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=True )
 					level_array.attrs['level'] = lev
 					level_array.attrs['dset_name'] = dsname
 					level_array = replace_nans( level_array )
 					tsdata[f"{vname}.{iL}"] = level_array
-					print(f" ----> replace_nans, #nan remaining = {np.count_nonzero(np.isnan(level_array.values))} ")
+					print(f" ----> replace_nans, #nans remaining = {np.count_nonzero(np.isnan(level_array.values))} ")
 			else:
 				varray.attrs['dset_name'] = dsname
 				tsdata[vname] = varray
