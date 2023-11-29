@@ -48,8 +48,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vlist: Dict[str, str] = task['input_variables']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
-	dmap = { v:k for k,v in cfg().preprocess.get( 'dims', {} ) }
-	zc = dmap.get('z','z')
+	zc = task['coords'].get('z','z')
 	tsdata, coords = {}, {}
 	print(f"  load_timestep({month}/{year}), kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
