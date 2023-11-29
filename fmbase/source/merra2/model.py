@@ -60,7 +60,9 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 					level_array: xa.DataArray = varray.sel( z=lev, method="nearest", drop=True )
 					level_array.attrs['level'] = lev
 					level_array.attrs['dset_name'] = dsname
-					tsdata[f"{vname}.{iL}"] = replace_nans( level_array )
+					level_array = replace_nans( level_array )
+					tsdata[f"{vname}.{iL}"] = level_array
+					print(f" ----> replace_nans, #nan remaining = {np.count_nonzero(np.isnan(level_array.values))} ")
 			else:
 				varray.attrs['dset_name'] = dsname
 				tsdata[vname] = varray
