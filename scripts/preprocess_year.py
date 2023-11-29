@@ -12,8 +12,6 @@ nproc = round(cpu_count()*0.9)
 years = list( range( 1986, 2021 ) )
 months = list(range(0,12,1))
 month_years = [ (month,year) for year in years for month in months  ]
-print( month_years )
-exit(0)
 
 def process( month_year: Tuple[int,int] ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
