@@ -61,7 +61,6 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 			if varray is not None:
 				if (vname in constants) and ("time" in varray.dims):
 					varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
-				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				if zc in varray.dims:
 					levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
 					level_arrays = []
@@ -71,6 +70,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 						level_arrays.append( level_array )
 					varray = xa.concat( level_arrays, zc )
 				varray.attrs['dset_name'] = dsname
+				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				tsdata[vname] = varray
 	return xa.Dataset( tsdata )
 
