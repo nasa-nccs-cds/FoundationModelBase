@@ -60,7 +60,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, task, **kwargs )
 			if varray is not None:
 				if (vname in constants) and ("time" in varray.dims):
-					varray = varray.mean( dim="time", skipna=True, keep_attrs=True, drop=True )
+					varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
 				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				if zc in varray.dims:
 					levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
