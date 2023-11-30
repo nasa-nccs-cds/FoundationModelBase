@@ -70,7 +70,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 						level_arrays.append( level_array )
 					varray = xa.concat( level_arrays, zc )
 				varray.attrs['dset_name'] = dsname
-				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
+				print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				tsdata[vname] = varray
 	return xa.Dataset( tsdata )
 
