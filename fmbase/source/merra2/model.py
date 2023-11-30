@@ -49,16 +49,18 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vnames = kwargs.pop('vars',None)
 	vlist: Dict[str, str] = task['input_variables']
+	constants: List[str] = task['constants']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	zc = task['coords'].get('z','z')
-	tsdata, coords = {}, {}
-	print(f"  load_timestep({month}/{year}), kwargs={kwargs} ")
+	tsdata = {}
+	print(f"  load_timestep({month}/{year}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
 			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, task, **kwargs )
 			if varray is not None:
-#				coords.update( varray.coords )
+				if (vname in constants) and ("time" in varray.dims):
+					varray = varray.mean( dim="time", skipna=True, keep_attrs=True, drop=True )
 				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				if zc in varray.dims:
 					levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
@@ -70,7 +72,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 					varray = xa.concat( level_arrays, zc )
 				varray.attrs['dset_name'] = dsname
 				tsdata[vname] = varray
-	return xa.Dataset( tsdata ) # , coords )
+	return xa.Dataset( tsdata )
 
 def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
 	adata: np.ndarray = level_array.values.flatten()
