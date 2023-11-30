@@ -21,15 +21,18 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                        filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
-def load_cache_var( version: str, dvar: str, year: int, month: int, task: Dict, **kwargs  ) -> xa.DataArray:
+def load_cache_var( version: str, dvar: str, year: int, month: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
 	filepath = variable_cache_filepath( version, dvar, year=year, month=month )
-	darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-	if darray.ndim > 2:
-		tval = darray.values[0,0,-1] if darray.ndim == 3 else darray.values[0,0,0,-1]
-		print( f" ***>> load_cache_var({dvar}): dims={darray.dims} shape={darray.shape} tval={tval}, filepath={filepath}" )
-	cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
-	return darray.rename(cmap)
+	try:
+		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
+		if darray.ndim > 2:
+			tval = darray.values[0,0,-1] if darray.ndim == 3 else darray.values[0,0,0,-1]
+			print( f" ***>> load_cache_var({dvar}): dims={darray.dims} shape={darray.shape} tval={tval}, filepath={filepath}" )
+		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
+		return darray.rename(cmap)
+	except FileNotFoundError:
+		print( f"Not reading variable {dvar} (does not exist in dataset): {filepath}")
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
@@ -53,19 +56,20 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	print(f"  load_timestep({month}/{year}), kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
-			varray: xa.DataArray = load_cache_var( version, dsname, year, month, task, **kwargs )
-			coords.update( varray.coords )
-			print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
-			if zc in varray.dims:
-				levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
-				level_arrays = []
-				for iL, lev in enumerate(levs):
-					level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
-					level_array = replace_nans( level_array )
-					level_arrays.append( level_array )
-				varray = xa.concat( level_arrays, zc )
-			varray.attrs['dset_name'] = dsname
-			tsdata[vname] = varray
+			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, task, **kwargs )
+			if varray is not None:
+				coords.update( varray.coords )
+				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
+				if zc in varray.dims:
+					levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
+					level_arrays = []
+					for iL, lev in enumerate(levs):
+						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
+						level_array = replace_nans( level_array )
+						level_arrays.append( level_array )
+					varray = xa.concat( level_arrays, zc )
+				varray.attrs['dset_name'] = dsname
+				tsdata[vname] = varray
 	return xa.Dataset( tsdata, coords )
 
 def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
