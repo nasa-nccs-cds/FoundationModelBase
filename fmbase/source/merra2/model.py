@@ -58,7 +58,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 		if (vnames is None) or (vname in vnames):
 			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, task, **kwargs )
 			if varray is not None:
-				coords.update( varray.coords )
+#				coords.update( varray.coords )
 				print( f"load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				if zc in varray.dims:
 					levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
@@ -70,7 +70,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 					varray = xa.concat( level_arrays, zc )
 				varray.attrs['dset_name'] = dsname
 				tsdata[vname] = varray
-	return xa.Dataset( tsdata, coords )
+	return xa.Dataset( tsdata ) # , coords )
 
 def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
 	adata: np.ndarray = level_array.values.flatten()
