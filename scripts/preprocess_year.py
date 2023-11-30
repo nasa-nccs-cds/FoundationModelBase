@@ -2,13 +2,12 @@ from fmbase.source.merra2.preprocess import MERRA2DataProcessor, StatsAccumulato
 from fmbase.util.config import configure
 from typing import List, Tuple
 from multiprocessing import Pool, cpu_count
-from fmbase.util.config import cfg
 import hydra
 
 hydra.initialize( version_base=None, config_path="../config" )
-configure( 'merra2-test' )
+configure( 'merra2-finetuning' )
 
-nproc = round(cpu_count()*0.9)
+nproc = cpu_count()-2
 years = list( range( 1984, 2022 ) )
 months = list(range(0,12,1))
 month_years = [ (month,year) for year in years for month in months  ]
