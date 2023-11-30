@@ -52,7 +52,8 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	constants: List[str] = task['constants']
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
-	zc = task['coords'].get('z','z')
+	cmap = task['coords']
+	zc, corder = cmap['z'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
 	print(f"  load_timestep({month}/{year}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
@@ -68,7 +69,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
 						level_array = replace_nans( level_array )
 						level_arrays.append( level_array )
-					varray = xa.concat( level_arrays, zc )
+					varray = xa.concat( level_arrays, zc ).transpose(*corder, missing_dims="ignore")
 				varray.attrs['dset_name'] = dsname
 				print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				tsdata[vname] = varray
