@@ -22,6 +22,10 @@ def dump_dset( name: str, dset: xa.Dataset ):
     for vname, vdata in dset.data_vars.items():
         print( f"  ** {vname}{vdata.dims}-> {vdata.shape} ")
 
+def get_day_from_filename( filename: str ) -> int:
+    sdate = filename.split(".")[-2]
+    return int(sdate[-2:])
+
 class QType(Enum):
     Intensive = 'intensive'
     Extensive = 'extensive'
@@ -146,33 +150,29 @@ class MERRA2DataProcessor:
             filepath = stats_filepath( cfg().preprocess.version, statname )
             self.stats.save( statname, filepath )
 
-    def get_monthly_files(self, year) -> Dict[ Tuple[str,int], Tuple[List[str],List[str]] ]:
+    def get_monthly_files(self, year: int, month: int) -> Dict[ str, Tuple[List[str],List[str]] ]:
         months: List[int] = list(range(*self.month_range))
         dsroot: str = fmbdir('dataset_root')
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
-        dset_files: Dict[ Tuple[str,int], Tuple[List[str],List[str]] ] = {}
+        dset_files: Dict[str, Tuple[List[str],List[str]] ] = {}
         assert "{month}" in self.var_file_template, "{month} field missing from platform.cov_files parameter"
         print( f"get_monthly_files({year})-> months: {months}:")
-        for month in months:
-            for collection, vlist in self.vars.items():
-                if collection.startswith("const"): dset_template: str = self.const_file_template.format( collection=collection )
-                else:                              dset_template: str = self.var_file_template.format(   collection=collection, year=year, month=f"{month + 1:0>2}")
-                dset_paths: str = f"{dsroot}/{dset_template}"
-                gfiles: List[str] = glob.glob(dset_paths)
-                print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={dsroot}")
-                dset_files[(collection,month)] = (gfiles, vlist)
+        for collection, vlist in self.vars.items():
+            if collection.startswith("const"): dset_template: str = self.const_file_template.format( collection=collection )
+            else:                              dset_template: str = self.var_file_template.format(   collection=collection, year=year, month=f"{month + 1:0>2}")
+            dset_paths: str = f"{dsroot}/{dset_template}"
+            gfiles: List[str] = glob.glob(dset_paths)
+            print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={dsroot}")
+            dset_files[collection] = (gfiles, vlist)
         return dset_files
 
-    def process_year(self, year: int, **kwargs ):
-        smonth = kwargs.pop('month',-1)
-        dset_files: Dict[Tuple[str, int], Tuple[List[str], List[str]]] = self.get_monthly_files(year)
-        for (collection, month), (dfiles, dvars) in dset_files.items():
-            if smonth in [-1,month]:
-                print(f" -- -- Procesing collection {collection} for month {month}/{year}: {len(dset_files)} files, {len(dvars)} vars")
-                t0 = time.time()
-                for dvar in dvars:
-                    self.process_subsample(collection, dvar, dfiles, year=year, month=month, **kwargs)
-                print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time() - t0) / 60:.2f} min")
+    def process_month(self, year: int, month: int, **kwargs):
+        dset_files: Dict[str, Tuple[List[str], List[str]]] = self.get_monthly_files(year,month)
+        for collection, (dfiles, dvars) in dset_files.items():
+            print(f" -- -- Procesing collection {collection} for month {month}/{year}: {len(dset_files)} files, {len(dvars)} vars")
+            t0 = time.time()
+            self.process_subsample(collection, dvars, dfiles, year=year, month=month, **kwargs)
+            print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time() - t0) / 60:.2f} min")
         return self.stats
 
     @classmethod
@@ -224,55 +224,69 @@ class MERRA2DataProcessor:
         varray: xa.DataArray = variable.rename(**cmap)
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
-        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, %nan={pctnan(variable)}, "
-              f"%missing={pctmissing(variable)}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
-
+        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         varray = varray.interp(**scoords, assume_sorted=zsorted)
-
         monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
         if   variable.shape[0] == 1:    newvar: xa.DataArray = varray
         elif monthly:                   newvar: xa.DataArray = varray.isel( time=global_attrs['month'] )
         else:
             resampled: DataArrayResample = varray.resample(time=self.tstep)
             newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
-
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
-        print( f" >> NEW: shape={newvar.shape}, dims={newvar.dims}" ) # , attrs={newvar.attrs}")
         for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
             if missing in newvar.attrs:
                 missing_value = newvar.attrs.pop('fmissing_value')
                 return newvar.where( newvar != missing_value, np.nan )
         return newvar
 
-    def process_subsample(self, collection: str, dvar: str, files: List[str], **kwargs):
-        filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **kwargs )
-        reprocess: bool = kwargs.pop( 'reprocess', False )
+    def process_subsample(self, collection: str, dvars: List[str], files: List[str], **kwargs):
+        for file in sorted(files):
+            t0 = time.time()
+            day = get_day_from_filename( file )
+            dset: xa.Dataset = xa.open_dataset(file)
+            dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
+            for dvar in dvars:
+                filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, day=day, **kwargs )
+                reprocess: bool = kwargs.pop( 'reprocess', False )
+                if (not os.path.exists(filepath)) or reprocess:
+                    qtype: QType = self.get_qtype(dvar)
+                    mvar: xa.DataArray = self.subsample( dset.data_vars[dvar], dset_attrs, qtype)
+                    self.stats.add_entry( dvar, mvar )
+                    os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
+                    mvar.to_netcdf( filepath, format="NETCDF4" )
+                    print(f" ** Saved variable {dvar}, shape= {mvar.shape}, dims= {mvar.dims}, to file= {filepath} in time = {time.time()-t0} sec")
+                else:
+                    print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
+
+    def process_subsample_monthly(self, collection: str, dvar: str, files: List[str], **kwargs):
+        filepath: str = variable_cache_filepath(cfg().preprocess.version, dvar, **kwargs)
+        reprocess: bool = kwargs.pop('reprocess', False)
         if (not os.path.exists(filepath)) or reprocess:
             print(f" ** Processing variable {dvar} in collection {collection}, args={kwargs}: {len(files)} files")
             t0 = time.time()
             samples: List[xa.DataArray] = []
             for file in sorted(files):
                 dset: xa.Dataset = xa.open_dataset(file)
-                dset_attrs = dict( collection=collection, **dset.attrs, **kwargs )
+                dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
                 qtype: QType = self.get_qtype(dvar)
-                print( f"Processing {qtype.value} var {dvar} from file {file}")
-                samples.append( self.subsample( dset.data_vars[dvar], dset_attrs, qtype) )
+                print(f"Processing {qtype.value} var {dvar} from file {file}")
+                samples.append(self.subsample(dset.data_vars[dvar], dset_attrs, qtype))
             if len(samples) == 0:
-                print( f"Found no files for variable {dvar} in collection {collection}")
+                print(f"Found no files for variable {dvar} in collection {collection}")
             else:
                 t1 = time.time()
-                if len(samples) > 1:  mvar: xa.DataArray = xa.concat( samples, dim="time" )
+                if len(samples) > 1:  mvar: xa.DataArray = xa.concat(samples, dim="time")
                 else:                 mvar: xa.DataArray = samples[0]
                 print(f"Saving Merged var {dvar}: shape= {mvar.shape}, dims= {mvar.dims}")
-                self.stats.add_entry( dvar, mvar )
+                self.stats.add_entry(dvar, mvar)
                 os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
-                mvar.to_netcdf( filepath, format="NETCDF4" )
-                print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time()-t1} sec")
-                print(f"  Completed processing in time = {(time.time()-t0)/60} min")
+                mvar.to_netcdf(filepath, format="NETCDF4")
+                print(f" ** ** ** Saved variable {dvar} to file= {filepath} in time = {time.time() - t1} sec")
+                print(f"  Completed processing in time = {(time.time() - t0) / 60} min")
         else:
-            print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
+            print(f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
 
 def stats_filepath( version: str, statname: str ) -> str:
     return f"{fmbdir('processed')}/{version}/stats/{statname}.nc"

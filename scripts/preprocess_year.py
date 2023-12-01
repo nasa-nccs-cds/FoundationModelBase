@@ -14,7 +14,7 @@ month_years = [ (month,year) for year in years for month in months  ]
 
 def process( month_year: Tuple[int,int] ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
-	return reader.process_year( month_year[1], month=month_year[0], reprocess=False )
+	return reader.process_month( month_year[1], month_year[0], reprocess=False)
 
 if __name__ == '__main__':
 	print( f"Multiprocessing {len(month_years)} months with {nproc} procs")

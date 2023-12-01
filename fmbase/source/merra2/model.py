@@ -16,9 +16,11 @@ class YearMonth:
 
 def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	if "year" in kwargs:
-		if "month" in kwargs:   filename = "{varname}_{year}-{month}.nc".format(varname=vname, **kwargs)
-		else:                   filename = "{varname}_{year}.nc".format(varname=vname, **kwargs)
-	else:                        filename = "{varname}.nc".format(varname=vname, **kwargs)
+		if "month" in kwargs:
+			if "day" in kwargs:   filename = "{varname}_{year}-{month}-{day}.nc".format(varname=vname, **kwargs)
+			else:				  filename = "{varname}_{year}-{month}.nc".format(varname=vname, **kwargs)
+		else:                     filename = "{varname}_{year}.nc".format(varname=vname, **kwargs)
+	else:                         filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
 def load_cache_var( version: str, dvar: str, year: int, month: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
