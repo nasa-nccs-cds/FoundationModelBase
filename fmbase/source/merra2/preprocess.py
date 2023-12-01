@@ -243,7 +243,7 @@ class MERRA2DataProcessor:
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
             for dvar in dvars:
-                fpargs = dict( day=day, **kwargs ) if ("time" in dset.coords) else {}
+                fpargs = dict( day=day, **kwargs ) if ("time" in dset.data_vars[dvar].dims) else {}
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
                 if dvar.startswith("FR"): print( f"\n ------> FR {dvar} Filepath: {filepath}")
                 if (not os.path.exists(filepath)) or reprocess:
