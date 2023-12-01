@@ -243,7 +243,9 @@ class MERRA2DataProcessor:
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
             for dvar in dvars:
-                filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, day=day, **kwargs )
+                is_constant = ("time" not in list(dset.data_vars.keys()))
+                fpargs = {} if is_constant else dict( day=day, **kwargs )
+                filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
                 if (not os.path.exists(filepath)) or reprocess:
                     qtype: QType = self.get_qtype(dvar)
                     mvar: xa.DataArray = self.subsample( dset.data_vars[dvar], dset_attrs, qtype)
