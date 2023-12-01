@@ -223,7 +223,7 @@ class MERRA2DataProcessor:
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         varray = varray.interp(**scoords, assume_sorted=zsorted)
         monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
-        if   variable.shape[0] == 1:    newvar: xa.DataArray = varray
+        if 'time' not in varray.dims:   newvar: xa.DataArray = varray
         elif monthly:                   newvar: xa.DataArray = varray.isel( time=global_attrs['month'] )
         else:
             resampled: DataArrayResample = varray.resample(time=self.tstep)
