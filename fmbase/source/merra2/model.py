@@ -23,16 +23,18 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                         filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
-def load_cache_var( version: str, dvar: str, year: int, month: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
+def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
-	filepath = variable_cache_filepath( version, dvar, year=year, month=month )
+	filepath = variable_cache_filepath( version, dvar, year=year, month=month, day=day )
 	try:
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 		if darray.ndim > 2:
 			tval = darray.values[0,0,-1] if darray.ndim == 3 else darray.values[0,0,0,-1]
 			print( f" ***>> load_cache_var({dvar}): dims={darray.dims} shape={darray.shape} tval={tval}, filepath={filepath}" )
 		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
-		return darray.rename(cmap)
+		result = darray.rename(cmap).compute()
+		darray.close()
+		return result
 	except FileNotFoundError:
 		print( f"Not reading variable {dvar} (does not exist in dataset): {filepath}")
 
@@ -48,7 +50,7 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 			merged[vname] = dvar
 	return merged
 
-def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
+def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vnames = kwargs.pop('vars',None)
 	vlist: Dict[str, str] = task['input_variables']
 	constants: List[str] = task['constants']
@@ -60,7 +62,7 @@ def load_timestep( year: int, month: int, task: Dict, **kwargs ) -> xa.Dataset:
 	print(f"  load_timestep({month}/{year}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
-			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, task, **kwargs )
+			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, day, task, **kwargs )
 			if varray is not None:
 				if (vname in constants) and ("time" in varray.dims):
 					varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
@@ -82,14 +84,10 @@ def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
 	adata[ np.isnan( adata ) ] = np.nanmean( adata )
 	return level_array.copy( data=adata.reshape(level_array.shape) )
 
-def load_batch( start: YearMonth, end: YearMonth, task_config: Dict, **kwargs ) -> xa.Dataset:
+def load_batch( year: int, month: int, day: int, ndays: int, task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
-	for year in range( start.year,end.year+1):
-		month_range = [0,12]
-		if year == start.year: month_range[0] = start.month
-		if year == end.year:   month_range[1] = end.month + 1
-		for month in range( *month_range ):
-			slices.append( load_timestep( year, month, task_config, **kwargs ) )
+	for day in range( day, day+ndays):
+		slices.append( load_timestep( year, month, day, task_config, **kwargs ) )
 	return merge_batch( slices )
 
 def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:
