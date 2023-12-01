@@ -245,6 +245,7 @@ class MERRA2DataProcessor:
             for dvar in dvars:
                 fpargs = dict( day=day, **kwargs ) if ("time" in dset.coords) else {}
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
+                if dvar.startswith("FR"): print( f"\n ------> FR {dvar} Filepath: {filepath}")
                 if (not os.path.exists(filepath)) or reprocess:
                     qtype: QType = self.get_qtype(dvar)
                     mvar: xa.DataArray = self.subsample( dset.data_vars[dvar], dset_attrs, qtype)
