@@ -36,7 +36,7 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, ta
 		darray.close()
 		return result
 	except FileNotFoundError:
-		print( f"Not reading variable {dvar} (does not exist in dataset): {filepath}")
+		print( f"Not reading variable {dvar} (data file does not exist): {filepath}")
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
