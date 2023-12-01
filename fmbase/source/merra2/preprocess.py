@@ -243,14 +243,14 @@ class MERRA2DataProcessor:
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
             for dvar in dvars:
-                dvdims = dset.data_vars[dvar].dims
-                isdyn = ("time" in dvdims)
+                darray: xa.DataArray = dset.data_vars[dvar]
+                isdyn = ("time" in darray.dims)
                 fpargs = dict( day=day, **kwargs ) if isdyn else {}
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
-                if dvar.startswith("FR"): print( f"\n ------> FR {dvar}{dvdims} (isdyn={isdyn}) Filepath: {filepath}")
+                if dvar.startswith("FR"): print( f"\n ------> FR {dvar}{darray.dims}{darray.shape} (isdyn={isdyn}) Filepath: {filepath}")
                 if (not os.path.exists(filepath)) or reprocess:
                     qtype: QType = self.get_qtype(dvar)
-                    mvar: xa.DataArray = self.subsample( dset.data_vars[dvar], dset_attrs, qtype)
+                    mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype)
                     self.stats.add_entry( dvar, mvar )
                     os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
                     print(f" ** Saving variable {dvar}{mvar.dims}: {mvar.shape} to file '{filepath}'")
