@@ -151,7 +151,6 @@ class MERRA2DataProcessor:
             self.stats.save( statname, filepath )
 
     def get_monthly_files(self, year: int, month: int) -> Dict[ str, Tuple[List[str],List[str]] ]:
-        months: List[int] = list(range(*self.month_range))
         dsroot: str = fmbdir('dataset_root')
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files: Dict[str, Tuple[List[str],List[str]] ] = {}
