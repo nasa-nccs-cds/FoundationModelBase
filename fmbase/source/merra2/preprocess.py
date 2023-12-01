@@ -238,13 +238,13 @@ class MERRA2DataProcessor:
         return newvar
 
     def process_subsample(self, collection: str, dvars: List[str], files: List[str], **kwargs):
+        reprocess: bool = kwargs.pop('reprocess', False)
         for file in sorted(files):
             day = get_day_from_filename( file )
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
             for dvar in dvars:
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, day=day, **kwargs )
-                reprocess: bool = kwargs.pop( 'reprocess', False )
                 if (not os.path.exists(filepath)) or reprocess:
                     qtype: QType = self.get_qtype(dvar)
                     mvar: xa.DataArray = self.subsample( dset.data_vars[dvar], dset_attrs, qtype)
