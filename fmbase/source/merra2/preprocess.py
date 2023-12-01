@@ -217,7 +217,7 @@ class MERRA2DataProcessor:
     def subsample(self, variable: xa.DataArray, global_attrs: Dict, qtype: QType) -> xa.DataArray:
         cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
         varray: xa.DataArray = variable.rename(**cmap)
-        tattrs: Dict = variable.coords['time'].attrs
+        tattrs: Dict = variable.coords['time'].attrs if 'time' in variable.coords else dict( time_increment=0 )
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
  #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
