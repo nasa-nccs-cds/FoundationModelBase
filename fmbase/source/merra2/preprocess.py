@@ -203,7 +203,7 @@ class MERRA2DataProcessor:
         varray: xa.DataArray = variable.rename(**cmap)
         scoords: Dict[str,np.ndarray] = self.subsample_coords( varray )
         newvar: xa.DataArray = varray
-        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}")
+ #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}")
         for cname, cval in scoords.items():
             if cname == 'z':
                 newvar: xa.DataArray = newvar.interp(**{cname: cval}, assume_sorted=increasing(cval))
@@ -220,7 +220,7 @@ class MERRA2DataProcessor:
         varray: xa.DataArray = variable.rename(**cmap)
         tattrs: Dict = variable.coords['time'].attrs
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
-        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
+ #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
         zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
         varray = varray.interp(**scoords, assume_sorted=zsorted)
         monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
@@ -239,7 +239,6 @@ class MERRA2DataProcessor:
 
     def process_subsample(self, collection: str, dvars: List[str], files: List[str], **kwargs):
         for file in sorted(files):
-            t0 = time.time()
             day = get_day_from_filename( file )
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
@@ -251,10 +250,10 @@ class MERRA2DataProcessor:
                     mvar: xa.DataArray = self.subsample( dset.data_vars[dvar], dset_attrs, qtype)
                     self.stats.add_entry( dvar, mvar )
                     os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
+                    print(f" ** Saving variable {dvar}{mvar.dims}: {mvar.shape} to file '{filepath}'")
                     mvar.to_netcdf( filepath, format="NETCDF4" )
-                    print(f" ** Saved variable {dvar}, shape= {mvar.shape}, dims= {mvar.dims}, to file= {filepath} in time = {time.time()-t0} sec")
                 else:
-                    print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
+                    print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file '{filepath}'")
             dset.close()
 
     def process_subsample_monthly(self, collection: str, dvar: str, files: List[str], **kwargs):
