@@ -1,5 +1,5 @@
 import xarray as xa
-import numpy as np
+import os, numpy as np
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
@@ -25,7 +25,9 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 
 def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
-	filepath = variable_cache_filepath( version, dvar, year=year, month=month, day=day )
+	filepath = variable_cache_filepath( version, dvar )
+	if not os.path.exists( filepath ):
+		filepath = variable_cache_filepath( version, dvar, year=year, month=month, day=day )
 	try:
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 		if darray.ndim > 2:
