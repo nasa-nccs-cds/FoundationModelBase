@@ -156,23 +156,19 @@ class MERRA2DataProcessor:
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files: Dict[str, Tuple[List[str],List[str]] ] = {}
         assert "{month}" in self.var_file_template, "{month} field missing from platform.cov_files parameter"
-        print( f"get_monthly_files({year})-> months: {months}:")
         for collection, vlist in self.vars.items():
             if collection.startswith("const"): dset_template: str = self.const_file_template.format( collection=collection )
             else:                              dset_template: str = self.var_file_template.format(   collection=collection, year=year, month=f"{month + 1:0>2}")
             dset_paths: str = f"{dsroot}/{dset_template}"
             gfiles: List[str] = glob.glob(dset_paths)
-            print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={dsroot}")
+#            print( f" ** M{month}: Found {len(gfiles)} files for glob {dset_paths}, template={self.var_file_template}, root dir ={dsroot}")
             dset_files[collection] = (gfiles, vlist)
         return dset_files
 
     def process_month(self, year: int, month: int, **kwargs):
         dset_files: Dict[str, Tuple[List[str], List[str]]] = self.get_monthly_files(year,month)
         for collection, (dfiles, dvars) in dset_files.items():
-            print(f" -- -- Procesing collection {collection} for month {month}/{year}: {len(dset_files)} files, {len(dvars)} vars")
-            t0 = time.time()
             self.process_subsample(collection, dvars, dfiles, year=year, month=month, **kwargs)
-            print(f" -- -- Processed {len(dset_files)} files for month {month}/{year}, time = {(time.time() - t0) / 60:.2f} min")
         return self.stats
 
     @classmethod
@@ -259,6 +255,7 @@ class MERRA2DataProcessor:
                     print(f" ** Saved variable {dvar}, shape= {mvar.shape}, dims= {mvar.dims}, to file= {filepath} in time = {time.time()-t0} sec")
                 else:
                     print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file {filepath}")
+            dset.close()
 
     def process_subsample_monthly(self, collection: str, dvar: str, files: List[str], **kwargs):
         filepath: str = variable_cache_filepath(cfg().preprocess.version, dvar, **kwargs)
