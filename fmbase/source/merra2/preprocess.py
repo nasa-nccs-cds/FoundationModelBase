@@ -1,4 +1,4 @@
-import xarray as xa
+import xarray as xa, pandas as pd
 import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type, Any
@@ -248,8 +248,8 @@ class MERRA2DataProcessor:
                 if isconst and ("time" in darray.dims):
                     darray = darray.isel( time=0, drop=True )
                 if 'time' in darray.coords:
-                    vtime: np.ndarray = darray.coords['time'].values
-                    print(f" ***>> load_cache_var[{dvar}(d{day})]: dims={darray.dims} shape={darray.shape} time({vtime.dtype})={vtime.tolist()}, file={file}")
+                    vtime: List[str] = [ str(pd.Timestamp(dt64)) for dt64 in darray.coords['time'].values.tolist() ]
+                    print(f" ***>> load_cache_var[{dvar}(d{day})]: dims={darray.dims} shape={darray.shape} time={vtime}, file={file}")
                 fpargs = {} if isconst else dict( day=day, **kwargs )
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
                 if dvar.startswith("FR"):
