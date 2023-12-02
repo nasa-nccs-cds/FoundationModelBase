@@ -259,7 +259,7 @@ class MERRA2DataProcessor:
                     print(f" ** Saving variable {dvar}{mvar.dims}: {mvar.shape} to file '{filepath}'")
                     if 'time' in mvar.coords:
                         vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
-                        print(f" -------> time(d{day}/{fpargs['month']}/{fpargs['year']}): {vtime}")
+                        print(f" -------> time({day}/{fpargs['month']+1}/{fpargs['year']}): {vtime}")
                     mvar.to_netcdf( filepath, format="NETCDF4" )
                 else:
                     print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file '{filepath}'")
