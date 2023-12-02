@@ -10,7 +10,7 @@ reprocess=True
 
 nproc = cpu_count()-2
 years = list( range( 1984, 1985 ) )
-months = list(range(0,6,1))
+months = list(range(0,2,1))
 month_years = [ (month,year) for year in years for month in months  ]
 
 def process( month_year: Tuple[int,int] ) -> StatsAccumulator:
