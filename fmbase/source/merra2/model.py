@@ -25,9 +25,9 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 
 def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
-	filepath = variable_cache_filepath( version, dvar )
+	filepath = variable_cache_filepath(version, dvar, year=year, month=month, day=day)
 	if not os.path.exists( filepath ):
-		filepath = variable_cache_filepath( version, dvar, year=year, month=month, day=day )
+		filepath = variable_cache_filepath( version, dvar )
 	try:
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 		if 'time' in darray.coords:
