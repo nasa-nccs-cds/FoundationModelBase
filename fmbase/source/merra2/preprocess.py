@@ -247,6 +247,9 @@ class MERRA2DataProcessor:
                 darray: xa.DataArray = dset.data_vars[dvar]
                 if isconst and ("time" in darray.dims):
                     darray = darray.isel( time=0, drop=True )
+                if 'time' in darray.coords:
+                    vtime: np.ndarray = darray.coords['time'].values
+                    print(f" ***>> load_cache_var[{dvar}(d{day})]: dims={darray.dims} shape={darray.shape} time({vtime.dtype})={vtime.tolist()}, file={file}")
                 fpargs = {} if isconst else dict( day=day, **kwargs )
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
                 if dvar.startswith("FR"):
