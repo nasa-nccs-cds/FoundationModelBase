@@ -247,10 +247,6 @@ class MERRA2DataProcessor:
                 darray: xa.DataArray = dset.data_vars[dvar]
                 if isconst and ("time" in darray.dims):
                     darray = darray.isel( time=0, drop=True )
-                if 'time' in darray.coords:
-                    vtime: List[str] = [ str(pd.Timestamp(dt64)) for dt64 in darray.coords['time'].values.tolist() ]
-                    print(f" ***>> load_cache_var[{dvar}]: dims={darray.dims} shape={darray.shape} file={file}")
-                    print(f" -------> time(d{day}): {vtime}")
                 fpargs = {} if isconst else dict( day=day, **kwargs )
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
                 if dvar.startswith("FR"):
@@ -261,6 +257,9 @@ class MERRA2DataProcessor:
                     self.stats.add_entry( dvar, mvar )
                     os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
                     print(f" ** Saving variable {dvar}{mvar.dims}: {mvar.shape} to file '{filepath}'")
+                    if 'time' in mvar.coords:
+                        vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
+                        print(f" -------> time(d{day}/{fpargs['month']}/{fpargs['year']}): {vtime}")
                     mvar.to_netcdf( filepath, format="NETCDF4" )
                 else:
                     print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file '{filepath}'")
