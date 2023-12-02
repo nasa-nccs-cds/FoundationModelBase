@@ -1,4 +1,4 @@
-import xarray as xa
+import xarray as xa, pandas as pd
 import os, numpy as np
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from fmbase.util.ops import fmbdir
@@ -31,8 +31,8 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, ta
 	try:
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
 		if 'time' in darray.coords:
-			time = darray.coords['time'].values
-			print( f" ***>> load_cache_var[{dvar}({day}/{month}/{year})]: dims={darray.dims} shape={darray.shape} time({time.dtype})={time.tolist()}, filepath={filepath}" )
+			vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in darray.coords['time'].values.tolist()]
+			print( f" ***>> load_cache_var[{dvar}({day}/{month}/{year})]: dims={darray.dims} shape={darray.shape} time={vtime}, filepath={filepath}" )
 		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
 		result = darray.rename(cmap).compute()
 		darray.close()
