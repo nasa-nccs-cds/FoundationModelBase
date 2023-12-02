@@ -30,9 +30,9 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, ta
 		filepath = variable_cache_filepath( version, dvar, year=year, month=month, day=day )
 	try:
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-		if darray.ndim > 2:
-			tval = darray.values[0,0,-1] if darray.ndim == 3 else darray.values[0,0,0,-1]
-			print( f" ***>> load_cache_var({dvar}): dims={darray.dims} shape={darray.shape} tval={tval}, filepath={filepath}" )
+		if 'time' in darray.coords:
+			time = darray.coords['time'].values
+			print( f" ***>> load_cache_var[{dvar}({day}/{month}/{year})]: dims={darray.dims} shape={darray.shape} time({time.dtype})={time.tolist()}, filepath={filepath}" )
 		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
 		result = darray.rename(cmap).compute()
 		darray.close()
@@ -61,7 +61,7 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 	cmap = task['coords']
 	zc, corder = cmap['z'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
-	print(f"  load_timestep({month}/{year}), constants={constants}, kwargs={kwargs} ")
+	print(f"  load_timestep({day}/{month}/{year}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
 			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, day, task, **kwargs )
