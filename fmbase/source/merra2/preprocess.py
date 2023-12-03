@@ -257,9 +257,9 @@ class MERRA2DataProcessor:
                     self.stats.add_entry( dvar, mvar )
                     os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
                     print(f" ** Saving variable {dvar}{mvar.dims}: {mvar.shape} to file '{filepath}'")
-                    if 'time' in mvar.coords:
-                        vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
-                        print(f" -------> time({day}/{fpargs['month']+1}/{fpargs['year']}): {vtime}")
+#                    if 'time' in mvar.coords:
+#                        vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
+#                        print(f" -------> time({day}/{fpargs['month']+1}/{fpargs['year']}): {vtime}")
                     mvar.to_netcdf( filepath, format="NETCDF4" )
                 else:
                     print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file '{filepath}'")
@@ -302,7 +302,9 @@ def load_stats( task_config: Dict , statname: str, **kwargs ) -> xa.Dataset:
     varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
     model_varname_map = { v: k for k, v in task_config['input_variables'].items() if v in varstats.data_vars }
     model_coord_map   = { k: v for k, v in task_config['coords'].items() if k in varstats.coords }
-    return varstats.rename( **model_varname_map, **model_coord_map )
+    result: xa.Dataset = varstats.rename( **model_varname_map, **model_coord_map )
+    print( f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
+    return result
 def load_norm_data( task_config: Dict ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
     model_statnames: Dict[str,str] = task_config.get( 'statnames' )
     stats = { model_statnames[statname]: load_stats(task_config,statname) for statname in StatsAccumulator.statnames }

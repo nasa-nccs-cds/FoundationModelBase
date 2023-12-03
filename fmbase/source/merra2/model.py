@@ -30,9 +30,9 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, ta
 		filepath = variable_cache_filepath( version, dvar )
 	try:
 		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-		if 'time' in darray.coords:
-			vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in darray.coords['time'].values.tolist()]
-			print( f" ***>> load_cache_var[{dvar}({day}/{month}/{year})]: dims={darray.dims} shape={darray.shape} time={vtime}, filepath={filepath}" )
+		# if 'time' in darray.coords:
+		# 	vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in darray.coords['time'].values.tolist()]
+		# 	print( f" ***>> load_cache_var[{dvar}({day}/{month}/{year})]: dims={darray.dims} shape={darray.shape} time={vtime}, filepath={filepath}" )
 		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
 		result = darray.rename(cmap).compute()
 		darray.close()
