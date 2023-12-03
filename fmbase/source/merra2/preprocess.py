@@ -89,7 +89,6 @@ class StatsAccumulator:
                 entry.add("mean_diff", mean_diff, weight )
                 entry.add("std_diff",  std_diff,  weight )
                 times: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
-                print( f"STATS({varname}) add entry for times {times} ")
 
     def accumulate(self, statname: str ) -> xa.Dataset:
         accum_stats = {}
