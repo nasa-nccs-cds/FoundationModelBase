@@ -250,8 +250,6 @@ class MERRA2DataProcessor:
                     darray = darray.isel( time=0, drop=True )
                 fpargs = {} if isconst else dict( day=day, **kwargs )
                 filepath: str = variable_cache_filepath( cfg().preprocess.version, dvar, **fpargs )
-                if dvar.startswith("FR"):
-                    print( f"\n ------> FR {dvar}{darray.dims}{darray.shape} (isconst={isconst}) Filepath: {filepath}")
                 if (not os.path.exists(filepath)) or reprocess:
                     qtype: QType = self.get_qtype(dvar)
                     mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype)
