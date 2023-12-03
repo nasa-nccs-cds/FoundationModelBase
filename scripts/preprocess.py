@@ -6,7 +6,7 @@ import hydra
 
 hydra.initialize( version_base=None, config_path="../config" )
 configure( 'merra2-finetuning' )
-reprocess=True
+reprocess=False
 
 nproc = cpu_count()-2
 years = list( range( *cfg().preprocess.year_range ) )
