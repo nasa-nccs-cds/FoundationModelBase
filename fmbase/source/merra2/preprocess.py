@@ -88,6 +88,8 @@ class StatsAccumulator:
                 entry: StatsEntry = self.entry( varname)
                 entry.add("mean_diff", mean_diff, weight )
                 entry.add("std_diff",  std_diff,  weight )
+                times: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
+                print( f"STATS({varname}) add entry for times {times} ")
 
     def accumulate(self, statname: str ) -> xa.Dataset:
         accum_stats = {}
@@ -257,9 +259,6 @@ class MERRA2DataProcessor:
                     self.stats.add_entry( dvar, mvar )
                     os.makedirs(os.path.dirname(filepath), mode=0o777, exist_ok=True)
                     print(f" ** Saving variable {dvar}{mvar.dims}: {mvar.shape} to file '{filepath}'")
-#                    if 'time' in mvar.coords:
-#                        vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in mvar.coords['time'].values.tolist()]
-#                        print(f" -------> time({day}/{fpargs['month']+1}/{fpargs['year']}): {vtime}")
                     mvar.to_netcdf( filepath, format="NETCDF4" )
                 else:
                     print( f" ** Skipping var {dvar:12s} in collection {collection:12s} due to existence of processed file '{filepath}'")
