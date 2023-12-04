@@ -62,7 +62,7 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	cmap = task['coords']
-	zc, corder = cmap['z'], [ cmap[cn] for cn in ['t','z','y','x'] ]
+	zc, yc, corder = cmap['z'], cmap['y'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
 	print(f"  load_timestep({day}/{month}/{year}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
@@ -76,20 +76,18 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 					level_arrays = []
 					for iL, lev in enumerate(levs):
 						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
-						level_array = replace_nans( level_array, cmap )
+						level_array = replace_nans( level_array, yc )
 						level_arrays.append( level_array )
-					varray = xa.concat( level_arrays, cmap ).transpose(*corder, missing_dims="ignore")
+					varray = xa.concat( level_arrays, zc ).transpose(*corder, missing_dims="ignore")
 				varray.attrs['dset_name'] = dsname
 				print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
 				tsdata[vname] = varray
 	return xa.Dataset( tsdata )
 
-def replace_nans( level_array: xa.DataArray, cmap: Dict[str,str] ) -> xa.DataArray:
+def replace_nans( level_array: xa.DataArray, dim: str ) -> xa.DataArray:
 	if nnan(level_array) > 0:
-		result: xa.DataArray =  level_array.interpolate_na( dim=cmap['x'], method="linear", fill_value="extrapolate" )
-		if nnan(result) > 0:
-			result: xa.DataArray = result.interpolate_na( dim=cmap['y'], method="linear", fill_value="extrapolate" )
-		assert nnan(result) == 0, "Error, NaNs remaining in input data after interpolate_na"
+		result: xa.DataArray =  level_array.interpolate_na( dim=dim, method="linear", fill_value="extrapolate" )
+		assert nnan(result) == 0, "NaNs remaining after replace_nans()"
 		return result
 	return level_array
 
