@@ -62,7 +62,7 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 	levels: Optional[np.ndarray] = get_levels_config(task)
 	version = task['dataset_version']
 	cmap = task['coords']
-	zc, corder = cmap['z'], [ cmap[cn] for cn in ['t','z','y','x'] ]
+	zc, xc, corder = cmap['z'], cmap['x'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
 	print(f"  load_timestep({day}/{month}/{year}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
@@ -76,7 +76,7 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 					level_arrays = []
 					for iL, lev in enumerate(levs):
 						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
-						level_array = replace_nans( level_array )
+						level_array = replace_nans( level_array, xc )
 						level_arrays.append( level_array )
 					varray = xa.concat( level_arrays, zc ).transpose(*corder, missing_dims="ignore")
 				varray.attrs['dset_name'] = dsname
@@ -84,10 +84,8 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 				tsdata[vname] = varray
 	return xa.Dataset( tsdata )
 
-def replace_nans( level_array: xa.DataArray ) -> xa.DataArray:
-	adata: np.ndarray = level_array.values.flatten()
-	adata[ np.isnan( adata ) ] = np.nanmean( adata )
-	return level_array.copy( data=adata.reshape(level_array.shape) )
+def replace_nans( level_array: xa.DataArray, dim: str ) -> xa.DataArray:
+	return level_array.interpolate_na( dim=dim, method="linear", fill_value="extrapolate" )
 
 def load_batch( year: int, month: int, day: int, ndays: int, task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
