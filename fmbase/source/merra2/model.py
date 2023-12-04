@@ -86,9 +86,9 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 
 def replace_nans( level_array: xa.DataArray, cmap: Dict[str,str] ) -> xa.DataArray:
 	if nnan(level_array) > 0:
-		result: xa.DataArray =  level_array.interpolate_na( dim=cmap['x'], method="linear", fill_value="extrapolate", keep_attrs=True )
+		result: xa.DataArray =  level_array.interpolate_na( dim=cmap['x'], method="linear", fill_value="extrapolate" )
 		if nnan(result) > 0:
-			result: xa.DataArray = level_array.interpolate_na( dim=cmap['y'], method="linear", fill_value="extrapolate", keep_attrs=True )
+			result: xa.DataArray = result.interpolate_na( dim=cmap['y'], method="linear", fill_value="extrapolate" )
 		assert nnan(result) == 0, "Error, NaNs remaining in input data after interpolate_na"
 		return result
 	return level_array
