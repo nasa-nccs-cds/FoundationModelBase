@@ -5,6 +5,7 @@ from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 from fmbase.util.config import cfg
+from fmgraphcast.data_utils import add_derived_vars
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
@@ -50,6 +51,7 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
+	add_derived_vars(merged)
 	ordered_vars = {vname: merged.data_vars[vname] for vname in list(cfg().task.input_variables.keys())}
 	return xa.Dataset( ordered_vars, coords=merged.coords, attrs=merged.attrs )
 
