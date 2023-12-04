@@ -50,7 +50,8 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
-	return merged
+	ordered_vars = {vname: merged.data_vars[vname] for vname in list(cfg().task.input_variables.keys())}
+	return xa.Dataset( ordered_vars, coords=merged.coords, attrs=merged.attrs )
 
 def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vnames = kwargs.pop('vars',None)
