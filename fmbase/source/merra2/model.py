@@ -76,7 +76,7 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 					level_arrays = []
 					for iL, lev in enumerate(levs):
 						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
-						level_array = replace_nans( level_array, cmap['y'] )
+						level_array = replace_nans( level_array, cmap )
 						level_arrays.append( level_array )
 					varray = xa.concat( level_arrays, cmap ).transpose(*corder, missing_dims="ignore")
 				varray.attrs['dset_name'] = dsname
