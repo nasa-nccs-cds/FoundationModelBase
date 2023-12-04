@@ -85,7 +85,11 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 	return xa.Dataset( tsdata )
 
 def replace_nans( level_array: xa.DataArray, dim: str ) -> xa.DataArray:
-	return level_array.interpolate_na( dim=dim, method="linear", fill_value="extrapolate" )
+	nnan0 = nnan(level_array)
+	if nnan0 > 0:
+		result: xa.DataArray =  level_array.interpolate_na( dim=dim, method="linear", fill_value="extrapolate" )
+		print( f"replace_nans({dim}): nnan: {nnan0} -> {nnan(result)}, darray{level_array.dims}: {level_array.shape}")
+	return result
 
 def load_batch( year: int, month: int, day: int, ndays: int, task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
