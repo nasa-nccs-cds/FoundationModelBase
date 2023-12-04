@@ -76,7 +76,7 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 					level_arrays = []
 					for iL, lev in enumerate(levs):
 						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
-						level_array = replace_nans( level_array, cmap['y'] )
+						level_array = replace_nans( level_array, cmap )
 						level_arrays.append( level_array )
 					varray = xa.concat( level_arrays, zc ).transpose(*corder, missing_dims="ignore")
 				varray.attrs['dset_name'] = dsname
@@ -84,13 +84,12 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 				tsdata[vname] = varray
 	return xa.Dataset( tsdata )
 
-def replace_nans( level_array: xa.DataArray, dim: str ) -> xa.DataArray:
-	nnan0 = nnan(level_array)
-	if nnan0 > 0:
-		result: xa.DataArray =  level_array.interpolate_na( dim=dim, method="linear", fill_value="extrapolate" )
-		assert nnan(result) == 0, "Error, NaNs remaining in input data after interpolate_na"
-#		print( f"replace_nans({dim}):  nnan: {nnan0} -> {nnan(result)}, darray{level_array.dims}: {level_array.shape}")
-		return result
+def replace_nans( level_array: xa.DataArray, cmap: Dict[str,str] ) -> xa.DataArray:
+	if nnan(level_array):
+		level_array =  level_array.interpolate_na( dim=cmap['x'], method="linear", fill_value="extrapolate" )
+		if nnan(level_array):
+			level_array = level_array.interpolate_na(dim=cmap['y'], method="linear", fill_value="extrapolate" )
+		assert nnan(level_array) == 0, "Error, NaNs remaining in input data after interpolate_na"
 	return level_array
 
 def load_batch( year: int, month: int, day: int, ndays: int, task_config: Dict, **kwargs ) -> xa.Dataset:
