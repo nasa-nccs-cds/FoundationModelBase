@@ -178,7 +178,7 @@ class MERRA2DataProcessor:
         return dset_files
 
     def get_daily_files(self, date: Tuple[int,int,int] ) -> Tuple[ Dict[str, Tuple[str, List[str]]], Dict[str, Tuple[str, List[str]]] ]:
-        year, month, day = date
+        (day,month,year) = date
         dsroot: str = fmbdir('dataset_root')
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files:  Dict[str, Tuple[str, List[str]]] = {}
@@ -197,7 +197,6 @@ class MERRA2DataProcessor:
         return dset_files, const_files
 
     def process_day(self, date: Tuple[int,int,int], **kwargs):
-        #   year, month, day = date
         dset_files, const_files = self.get_daily_files( date )
         reprocess: bool = kwargs.pop('reprocess', False)
         for collection, (file_path, dvars) in dset_files.items():

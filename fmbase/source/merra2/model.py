@@ -5,12 +5,29 @@ from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 from fmbase.util.config import cfg
+import chex
 
 _SEC_PER_HOUR = 3600
 _HOUR_PER_DAY = 24
 SEC_PER_DAY = _SEC_PER_HOUR * _HOUR_PER_DAY
 _AVG_DAY_PER_YEAR = 365.24219
 AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
+
+@chex.dataclass(frozen=True, eq=True)
+class Date:
+	day: int
+	month: int
+	year: int
+
+	@property
+	def kw(self):
+		return dict( day=self.day, month=self.month, year=self.year )
+
+	def __str__(self):
+		return f'{self.year:04}{self.month:02}{self.day:02}'
+
+	def __repr__(self):
+		return f'{self.year}-{self.month}-{self.day}'
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
@@ -29,14 +46,12 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                         filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
-def cache_filepath(version: str, date: Tuple[int,int,int]) -> str:
-	year, month, day = date
-	filename = f"{year}-{month}-{day}.nc"
-	return f"{fmbdir('processed')}/{version}/{filename}"
+def cache_filepath(version: str, date: Date) -> str:
+	return f"{fmbdir('processed')}/{version}/{repr(date)}.nc"
 
-def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
+def load_cache_var( version: str, dvar: str, date: Date, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
-	filepath = variable_cache_filepath(version, dvar, year=year, month=month, day=day)
+	filepath = variable_cache_filepath(version, dvar, **date.kw)
 	if not os.path.exists( filepath ):
 		filepath = variable_cache_filepath( version, dvar )
 	try:
@@ -94,7 +109,7 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	add_derived_vars(merged)
 	return merged
 
-def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa.Dataset:
+def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
 	vnames = kwargs.pop('vars',None)
 	vlist: Dict[str, str] = task['input_variables']
 	constants: List[str] = task['constants']
@@ -103,10 +118,10 @@ def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa
 	cmap = task['coords']
 	zc, yc, corder = cmap['z'], cmap['y'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
-	print(f"  load_timestep({day}/{month}/{year}), constants={constants}, kwargs={kwargs} ")
+	print(f"  load_timestep({date}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
-			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, year, month, day, task, **kwargs )
+			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, date, task, **kwargs )
 			if varray is not None:
 				if (vname in constants) and ("time" in varray.dims):
 					varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
