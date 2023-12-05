@@ -11,8 +11,7 @@ _HOUR_PER_DAY = 24
 SEC_PER_DAY = _SEC_PER_HOUR * _HOUR_PER_DAY
 _AVG_DAY_PER_YEAR = 365.24219
 AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
-DAY_PROGRESS = cfg().preprocess.day_progress
-YEAR_PROGRESS = cfg().preprocess.year_progress
+
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
 
@@ -77,10 +76,10 @@ def add_derived_vars(data: xa.Dataset) -> None:
   seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
   batch_dim = ("batch",) if "batch" in data.dims else ()
   year_progress = get_year_progress(seconds_since_epoch)
-  data.update( featurize_progress( name=YEAR_PROGRESS, dims=batch_dim + ("time",), progress=year_progress ) )
+  data.update( featurize_progress( name=cfg().preprocess.year_progress, dims=batch_dim + ("time",), progress=year_progress ) )
   longitude_coord = data.coords["lon"]
   day_progress = get_day_progress(seconds_since_epoch, longitude_coord.data)
-  data.update( featurize_progress( name=DAY_PROGRESS, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
+  data.update( featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
