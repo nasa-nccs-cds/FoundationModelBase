@@ -1,12 +1,18 @@
 import xarray as xa, pandas as pd
 import os, numpy as np
-from typing import Any, Dict, List, Tuple, Type, Optional, Union
+from typing import Any, Dict, List, Tuple, Type, Optional, Union, Sequence, Mapping
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
 from dataclasses import dataclass
 from fmbase.util.config import cfg
-from fmgraphcast.data_utils import add_derived_vars
 
+_SEC_PER_HOUR = 3600
+_HOUR_PER_DAY = 24
+SEC_PER_DAY = _SEC_PER_HOUR * _HOUR_PER_DAY
+_AVG_DAY_PER_YEAR = 365.24219
+AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
+DAY_PROGRESS = cfg().preprocess.day_progress
+YEAR_PROGRESS = cfg().preprocess.year_progress
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
 
@@ -46,6 +52,36 @@ def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, ta
 	except FileNotFoundError:
 		print( f"Not reading variable {dvar} (data file does not exist): {filepath}")
 
+def get_year_progress(seconds_since_epoch: np.ndarray) -> np.ndarray:
+  years_since_epoch = ( seconds_since_epoch / SEC_PER_DAY / np.float64(_AVG_DAY_PER_YEAR) )
+  yp = np.mod(years_since_epoch, 1.0).astype(np.float32)
+  return yp
+
+def get_day_progress( seconds_since_epoch: np.ndarray, longitude: np.ndarray ) -> np.ndarray:
+  day_progress_greenwich = ( np.mod(seconds_since_epoch, SEC_PER_DAY) / SEC_PER_DAY )
+  longitude_offsets = np.deg2rad(longitude) / (2 * np.pi)
+  day_progress = np.mod( day_progress_greenwich[..., np.newaxis] + longitude_offsets, 1.0 )
+  return day_progress.astype(np.float32)
+
+def featurize_progress( name: str, dims: Sequence[str], progress: np.ndarray ) -> Mapping[str, xa.Variable]:
+  if len(dims) != progress.ndim:
+    raise ValueError( f"Number of dimensions in feature {name}{dims} must be equal to the number of dimensions in progress{progress.shape}." )
+  else: print( f"featurize_progress: {name}{dims} --> progress{progress.shape} ")
+  progress_phase = progress * (2 * np.pi)
+  return { name: xa.Variable(dims, progress), name + "_sin": xa.Variable(dims, np.sin(progress_phase)), name + "_cos": xa.Variable(dims, np.cos(progress_phase)) }
+
+def add_derived_vars(data: xa.Dataset) -> None:
+  for coord in ("datetime", "lon"):
+    if coord not in data.coords:
+      raise ValueError(f"'{coord}' must be in `data` coordinates.")
+  seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
+  batch_dim = ("batch",) if "batch" in data.dims else ()
+  year_progress = get_year_progress(seconds_since_epoch)
+  data.update( featurize_progress( name=YEAR_PROGRESS, dims=batch_dim + ("time",), progress=year_progress ) )
+  longitude_coord = data.coords["lon"]
+  day_progress = get_day_progress(seconds_since_epoch, longitude_coord.data)
+  data.update( featurize_progress( name=DAY_PROGRESS, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
+
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
 	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
@@ -57,8 +93,7 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
 	add_derived_vars(merged)
-	ordered_vars = {vname: merged.data_vars[vname] for vname in list(cfg().task.input_variables.keys())}
-	return xa.Dataset( ordered_vars, coords=merged.coords, attrs=merged.attrs )
+	return merged
 
 def load_timestep( year: int, month: int, day: int, task: Dict, **kwargs ) -> xa.Dataset:
 	vnames = kwargs.pop('vars',None)

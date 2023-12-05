@@ -10,6 +10,8 @@ vars: { inst3_3d_asm_Np: ['T', 'U', 'V', 'OMEGA', 'H', 'QV', 'PHIS' ],
         const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'],
         tavg1_2d_int_Nx: ['PRECLS', 'SWNETTOA'] }
 extensive: [ 'PRECLS' ]
+day_progress: "day_progress"
+year_progress: "year_progress"
 
 
 
