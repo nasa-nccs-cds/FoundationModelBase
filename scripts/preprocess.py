@@ -11,16 +11,17 @@ reprocess=False
 nproc = cpu_count()-2
 years = list( range( *cfg().preprocess.year_range ) )
 months = list(range(0,12,1))
-month_years = [ (month,year) for year in years for month in months  ]
+days = list(range(0,31,1))
+dates = [ (day,month,year) for year in years for month in months for day in days  ]
 
-def process( month_year: Tuple[int,int] ) -> StatsAccumulator:
+def process( date: Tuple[int,int,int] ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
-	return reader.process_month( month_year[1], month_year[0], reprocess=reprocess)
+	return reader.process_day( date, reprocess=reprocess)
 
 if __name__ == '__main__':
-	print( f"Multiprocessing {len(month_years)} months with {nproc} procs")
+	print( f"Multiprocessing {len(dates)} days with {nproc} procs")
 	with Pool(processes=nproc) as pool:
-		proc_stats: List[StatsAccumulator] = pool.map( process, month_years )
+		proc_stats: List[StatsAccumulator] = pool.map( process, dates )
 		MERRA2DataProcessor().save_stats(proc_stats)
 
 

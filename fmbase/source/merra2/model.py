@@ -24,6 +24,11 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                         filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
+def cache_filepath(version: str, date: Tuple[int,int,int]) -> str:
+	year, month, day = date
+	filename = f"{year}-{month}-{day}.nc"
+	return f"{fmbdir('processed')}/{version}/{filename}"
+
 def load_cache_var( version: str, dvar: str, year: int, month: int, day: int, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
 	filepath = variable_cache_filepath(version, dvar, year=year, month=month, day=day)
