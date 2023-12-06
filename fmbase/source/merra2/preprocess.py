@@ -222,6 +222,7 @@ class MERRA2DataProcessor:
                         except Exception as err:
                             print(f"ERROR processing var {collection}:{dvar}{darray.dims} {darray.shape}: ({date}) {file_path}")
                             traceback.print_exc()
+                            raise err
                     dset.close()
                 if len(mvars) > 0:
                     dset = xa.Dataset(mvars)
