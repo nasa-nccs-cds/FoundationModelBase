@@ -251,8 +251,8 @@ class MERRA2DataProcessor:
 
     def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
         subsample_coords: Dict[str,Any] = {}
-        if (self.levels is not None) and ('z' in dvar.dims):
-            subsample_coords['z'] = self.levels
+ #       if (self.levels is not None) and ('z' in dvar.dims):
+ #           subsample_coords['z'] = self.levels
         if self.xres is not None:
             if self.xext is  None:
                 xc0 = dvar.coords['x'].values
