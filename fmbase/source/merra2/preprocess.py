@@ -2,7 +2,7 @@ import xarray as xa, pandas as pd
 import numpy as np
 from fmbase.util.config import cfg, Date
 from typing import List, Union, Tuple, Optional, Dict, Type, Any
-import glob, sys, os, time
+import glob, sys, os, time, traceback
 from xarray.core.resample import DataArrayResample
 from fmbase.util.ops import get_levels_config, increasing, replace_nans
 from fmbase.source.merra2.model import variable_cache_filepath, cache_filepath, fmbdir
@@ -208,22 +208,21 @@ class MERRA2DataProcessor:
                 print(f"Processing {ncollections} collections for date {date}")
                 mvars = {}
                 for collection, (file_path, dvars) in dset_files.items():
- #                   print(f"Processing({date}): {len(dvars)} vars for collection {collection}: {file_path}")
-                    try:
-                        isconst = collection.startswith("const")
-                        dset: xa.Dataset = xa.open_dataset(file_path)
-                        dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-                        for dvar in dvars:
+                    isconst = collection.startswith("const")
+                    dset: xa.Dataset = xa.open_dataset(file_path)
+                    dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
+                    for dvar in dvars:
+                        try:
                             darray: xa.DataArray = dset.data_vars[dvar]
                             qtype: QType = self.get_qtype(dvar)
                             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
                             self.stats.add_entry( dvar, mvar )
                             print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
                             mvars[dvar] = mvar
-                        dset.close()
-                    except Exception as err:
-                        print(f"ERROR processing ({date}): {len(dvars)} vars for collection {collection}: {file_path}")
-                        print( err )
+                        except Exception as err:
+                            print(f"ERROR processing var {collection}:{dvar}{darray.dims} {darray.shape}: ({date}) {file_path}")
+                            traceback.print_exc()
+                    dset.close()
                 if len(mvars) > 0:
                     dset = xa.Dataset(mvars)
                     os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
