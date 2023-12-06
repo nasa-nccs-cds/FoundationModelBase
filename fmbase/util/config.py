@@ -22,13 +22,25 @@ class Date:
 
 	@property
 	def skw(self):
-		return dict( year = str(self.year), month = f"{self.month+1:0>2}", day = f"{self.day+1:0>2}" )
+		return dict( year = self.syear, month = self.smonth , day = self.sday )
+
+	@property
+	def smonth(self):
+		return f"{self.month + 1:0>2}"
+
+	@property
+	def sday(self):
+		return f"{self.day + 1:0>2}"
+
+	@property
+	def syear(self):
+		return str(self.year)
 
 	def __str__(self):
-		return f'{self.year:04}{self.month:02}{self.day:02}'
+		return self.syear + self.smonth + self.sday
 
 	def __repr__(self):
-		return f'{self.year}-{self.month}-{self.day}'
+		return f'{self.year}-{self.month+1}-{self.day+1}'
 
 	@classmethod
 	def get_dates( cls, **kwargs ) -> List["Date"]:
