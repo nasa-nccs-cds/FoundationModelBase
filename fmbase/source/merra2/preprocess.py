@@ -296,7 +296,9 @@ class MERRA2DataProcessor:
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
  #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }"
         try:
-            varray = varray.interp(**scoords, assume_sorted=False)
+            varray = varray.interp( x=scoords['x'], y=scoords['y'], assume_sorted=True)
+            if 'z' in scoords:
+                varray = varray.interp( z=scoords['z'], assume_sorted=False )
         except ValueError as err:
             print( f"ERROR: Interp error for variable{varray.dims}{varray.shape}: scoords={scoords} ")
             return  None
