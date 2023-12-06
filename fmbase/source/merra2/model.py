@@ -24,8 +24,11 @@ def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	else:                         filename = "{varname}.nc".format(varname=vname, **kwargs)
 	return f"{fmbdir('processed')}/{version}/{filename}"
 
-def cache_filepath(version: str, date: Date) -> str:
+def cache_var_filepath(version: str, date: Date) -> str:
 	return f"{fmbdir('processed')}/{version}/{repr(date)}.nc"
+
+def cache_const_filepath(version: str) -> str:
+	return f"{fmbdir('processed')}/{version}/const.nc"
 
 def load_cache_var( version: str, dvar: str, date: Date, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
 	coord_map: Dict = task.get('coords',{})
@@ -96,37 +99,29 @@ def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
 	cmap = task['coords']
 	zc, yc, corder = cmap['z'], cmap['y'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
+	filepath = cache_filepath(version, **date.kw)
+#	if not os.path.exists( filepath ):
+	dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
 	print(f"  load_timestep({date}), constants={constants}, kwargs={kwargs} ")
 	for vname,dsname in vlist.items():
 		if (vnames is None) or (vname in vnames):
-			varray: Optional[xa.DataArray] = load_cache_var( version, dsname, date, task, **kwargs )
-			if varray is not None:
-				if (vname in constants) and ("time" in varray.dims):
-					varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
-				if zc in varray.dims:
-					levs: List[str] = varray.coords[zc].values.tolist() if levels is None else levels
-					level_arrays = []
-					for iL, lev in enumerate(levs):
-						level_array: xa.DataArray = varray.sel( **{zc:lev}, method="nearest", drop=False )
-						level_array = replace_nans( level_array, yc )
-						level_arrays.append( level_array )
-					varray = xa.concat( level_arrays, zc ).transpose(*corder, missing_dims="ignore")
-				varray.attrs['dset_name'] = dsname
-				print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
-				tsdata[vname] = varray
+			varray: xa.DataArray = dataset.data_vars[vname]
+			if (vname in constants) and ("time" in varray.dims):
+				varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
+			varray.attrs['dset_name'] = dsname
+			print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
+			tsdata[vname] = varray
 	return xa.Dataset( tsdata )
 
-def replace_nans( level_array: xa.DataArray, dim: str ) -> xa.DataArray:
-	if nnan(level_array) > 0:
-		result: xa.DataArray =  level_array.interpolate_na( dim=dim, method="linear", fill_value="extrapolate" )
-		assert nnan(result) == 0, "NaNs remaining after replace_nans()"
-		return result
-	return level_array
 
-def load_batch( year: int, month: int, day: int, ndays: int, task_config: Dict, **kwargs ) -> xa.Dataset:
+def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
-	for day in range( day, day+ndays):
-		slices.append( load_timestep( year, month, day, task_config, **kwargs ) )
+	version = task_config['dataset_version']
+	for date in dates:
+		filepath = cache_filepath(version, **date.kw)
+		#	if not os.path.exists( filepath ):
+		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
+		slices.append( dataset )
 	return merge_batch( slices )
 
 def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:

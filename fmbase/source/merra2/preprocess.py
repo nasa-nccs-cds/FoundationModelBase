@@ -5,7 +5,7 @@ from typing import List, Union, Tuple, Optional, Dict, Type, Any
 import glob, sys, os, time, traceback
 from xarray.core.resample import DataArrayResample
 from fmbase.util.ops import get_levels_config, increasing, replace_nans
-from fmbase.source.merra2.model import variable_cache_filepath, cache_filepath, fmbdir
+from fmbase.source.merra2.model import cache_var_filepath, cache_const_filepath, fmbdir, add_derived_vars
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
@@ -198,35 +198,52 @@ class MERRA2DataProcessor:
 
     def process_day(self, date: Date, **kwargs):
         reprocess: bool = kwargs.pop('reprocess', False)
-        cache_fpath: str = cache_filepath(cfg().preprocess.version, date)
-        if (not os.path.exists(cache_fpath)) or reprocess:
+        cache_fvpath: str = cache_var_filepath(cfg().preprocess.version, date)
+        os.makedirs(os.path.dirname(cache_fvpath), mode=0o777, exist_ok=True)
+        if (not os.path.exists(cache_fvpath)) or reprocess:
+            cache_fcpath: str = cache_const_filepath(cfg().preprocess.version)
             dset_files, const_files = self.get_daily_files(date)
             ncollections = len(dset_files.keys())
             if ncollections == 0:
                 print( f"No collections for date {date}")
             else:
                 print(f"Processing {ncollections} collections for date {date}")
-                mvars = {}
                 for collection, (file_path, dvars) in dset_files.items():
-                    isconst = collection.startswith("const")
-                    dset: xa.Dataset = xa.open_dataset(file_path)
-                    dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-                    for dvar in dvars:
-                        darray: xa.DataArray = dset.data_vars[dvar]
-                        qtype: QType = self.get_qtype(dvar)
-                        mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
-                        self.stats.add_entry( dvar, mvar )
-                        print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
-                        mvars[dvar] = mvar
-                    dset.close()
-                if len(mvars) > 0:
-                    dset = xa.Dataset(mvars)
-                    os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
-                    dset.to_netcdf(cache_fpath, format="NETCDF4")
-                    print(f" >> Saving cache data for {date} to file '{cache_fpath}'")
+                    collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, **kwargs )
+                    if collection_dset is not None:
+                        collection_dset.to_netcdf(cache_fvpath, format="NETCDF4")
+                        print(f" >> Saving cache data for {date} to file '{cache_fvpath}'")
+                if not os.path.exists(cache_fcpath):
+                    const_dsets: List[xa.Dataset] = []
+                    for collection, (file_path, dvars) in const_files.items():
+                        collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, isconst=True, **kwargs )
+                        if collection_dset is not None: const_dsets.append( collection_dset )
+                    if len( const_dsets ) > 0:
+                        xa.merge(const_dsets).to_netcdf(cache_fcpath, format="NETCDF4")
+                        print(f" >> Saving cache data for {date} to file '{cache_fcpath}'")
+                    else:
+                        print(f" >> No constant data found for date {date}")
         else:
-            print( f" ** Skipping date {date} due to existence of processed file '{cache_fpath}'")
+            print( f" ** Skipping date {date} due to existence of processed file '{cache_fvpath}'")
 
+    def load_collection(self, collection, file_path: str, dvars: List[str], **kwargs) -> Optional[xa.Dataset]:
+        dset: xa.Dataset = xa.open_dataset(file_path)
+        isconst = kwargs.pop( 'isconst', False )
+        dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
+        mvars = {}
+        for dvar in dvars:
+            darray: xa.DataArray = dset.data_vars[dvar]
+            qtype: QType = self.get_qtype(dvar)
+            mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst )
+            self.stats.add_entry(dvar, mvar)
+            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
+            mvars[dvar] = mvar
+        dset.close()
+        if len( mvars ) > 0:
+            result = xa.Dataset(mvars)
+            if not isconst:
+                add_derived_vars(result)
+            return result
 
 
     def process_month(self, year: int, month: int, **kwargs):
