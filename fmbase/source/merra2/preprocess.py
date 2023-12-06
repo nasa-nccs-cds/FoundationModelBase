@@ -216,12 +216,13 @@ class MERRA2DataProcessor:
                         try:
                             qtype: QType = self.get_qtype(dvar)
                             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
-                            self.stats.add_entry( dvar, mvar )
-                            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
-                            mvars[dvar] = mvar
+                            if mvar is not None:
+                                self.stats.add_entry( dvar, mvar )
+                                print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
+                                mvars[dvar] = mvar
                         except Exception as err:
                             print(f"ERROR processing var {collection}:{dvar}{darray.dims} {darray.shape}: ({date}) {file_path}")
-                            traceback.print_exc()
+                        #    traceback.print_exc()
                             raise err
                     dset.close()
                 if len(mvars) > 0:
@@ -294,7 +295,11 @@ class MERRA2DataProcessor:
             varray = varray.isel( time=0, drop=True )
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
  #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }"
-        varray = varray.interp(**scoords, assume_sorted=True)
+        try:
+            varray = varray.interp(**scoords, assume_sorted=True)
+        except ValueError as err:
+            print( f"ERROR: Interp error for variable{varray.dims}{varray.shape}: scoords={scoords} ")
+            return  None
         resampled: DataArrayResample = varray.resample(time=self.tstep)
         newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
         newvar.attrs.update(global_attrs)
