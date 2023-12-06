@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from .config import cfg
 import xarray as xa
 
+def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
+def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
+
 def xextent( raster: xa.DataArray ) -> Tuple[float,float,float,float]:
     xc, yc = raster.coords['lon'].values.tolist(), raster.coords['lat'].values.tolist()
     extent = xc[0], xc[-1]+(xc[1]-xc[0]), yc[0], yc[-1]+(yc[1]-yc[0])
@@ -106,7 +109,12 @@ def increasing( data: np.ndarray ) -> bool:
     xl = data.tolist()
     return xl[-1] > xl[0]
 
-
+def replace_nans(level_array: xa.DataArray, dim: str) -> xa.DataArray:
+    if nnan(level_array) > 0:
+        result: xa.DataArray = level_array.interpolate_na(dim=dim, method="linear", fill_value="extrapolate")
+        assert nnan(result) == 0, "NaNs remaining after replace_nans()"
+        return result
+    return level_array
 def format_timedelta( td: np.timedelta64, form: str ) -> str:
 	s = td.astype('timedelta64[s]').astype(np.int32)
 	hours, remainder = divmod(s, 3600)

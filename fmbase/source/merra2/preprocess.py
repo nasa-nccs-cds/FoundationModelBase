@@ -4,7 +4,7 @@ from fmbase.util.config import cfg, Date
 from typing import List, Union, Tuple, Optional, Dict, Type, Any
 import glob, sys, os, time
 from xarray.core.resample import DataArrayResample
-from fmbase.util.ops import get_levels_config, increasing
+from fmbase.util.ops import get_levels_config, increasing, replace_nans
 from fmbase.source.merra2.model import variable_cache_filepath, cache_filepath, fmbdir
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
@@ -142,6 +142,7 @@ class MERRA2DataProcessor:
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
+        self.corder = ['t','z','y','x']
         self.var_file_template =  cfg().platform.dataset_files
         self.const_file_template =  cfg().platform.constant_file
         self.stats = StatsAccumulator()
@@ -196,31 +197,31 @@ class MERRA2DataProcessor:
         return dset_files, const_files
 
     def process_day(self, date: Date, **kwargs):
-        dset_files, const_files = self.get_daily_files( date )
         reprocess: bool = kwargs.pop('reprocess', False)
-        for collection, (file_path, dvars) in dset_files.items():
-            cache_fpath: str = cache_filepath(cfg().preprocess.version, date)
-            if (not os.path.exists(cache_fpath)) or reprocess:
+        cache_fpath: str = cache_filepath(cfg().preprocess.version, date)
+        if (not os.path.exists(cache_fpath)) or reprocess:
+            dset_files, const_files = self.get_daily_files(date)
+            mvars = {}
+            for collection, (file_path, dvars) in dset_files.items():
+                isconst = collection.startswith("const")
                 dset: xa.Dataset = xa.open_dataset(file_path)
                 dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-                mvars = {}
                 for dvar in dvars:
                     darray: xa.DataArray = dset.data_vars[dvar]
-        #            if isconst and ("time" in darray.dims):
-        #                darray = darray.isel( time=0, drop=True )
                     qtype: QType = self.get_qtype(dvar)
-                    mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype)
+                    mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
                     self.stats.add_entry( dvar, mvar )
-                    print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape} to file '{cache_fpath}'")
+                    print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
                     mvars[dvar] = mvar
-                if len(mvars) > 0:
-                    dset = xa.Dataset( mvars )
-                    os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
-                    dset.to_netcdf(cache_fpath, format="NETCDF4")
-                    print(f" >> Saving collection {collection}:{date} to file '{cache_fpath}'")
                 dset.close()
-            else:
-                print( f" ** Skipping day {date} in collection {collection:12s} due to existence of processed file '{cache_fpath}'")
+            if len(mvars) > 0:
+                dset = xa.Dataset(mvars)
+                os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
+                dset.to_netcdf(cache_fpath, format="NETCDF4")
+                print(f" >> Saving cache data for {date} to file '{cache_fpath}'")
+        else:
+            print( f" ** Skipping date {date} due to existence of processed file '{cache_fpath}'")
+
 
 
     def process_month(self, year: int, month: int, **kwargs):
@@ -276,36 +277,34 @@ class MERRA2DataProcessor:
         return newvar.where( newvar != newvar.attrs['fmissing_value'], np.nan )
 
 
-    def subsample(self, variable: xa.DataArray, global_attrs: Dict, qtype: QType) -> xa.DataArray:
+    def subsample(self, variable: xa.DataArray, global_attrs: Dict, qtype: QType, isconst: bool) -> xa.DataArray:
         cmap: Dict[str, str] = {cn0: cn1 for (cn0, cn1) in self.dmap.items() if cn0 in list(variable.coords.keys())}
         varray: xa.DataArray = variable.rename(**cmap)
-        tattrs: Dict = variable.coords['time'].attrs if 'time' in variable.coords else dict( time_increment=0 )
+        if isconst and ("time" in varray.dims):
+            varray = varray.isel( time=0, drop=True )
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
- #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
-        zsorted = ('z' not in varray.coords) or increasing(varray.coords['z'].values)
-        varray = varray.interp(**scoords, assume_sorted=zsorted)
-        monthly = (tattrs['time_increment'] > 7000000) and (variable.shape[0] == 12)
-        if 'time' not in varray.dims:   newvar: xa.DataArray = varray
-        elif monthly:                   newvar: xa.DataArray = varray.isel( time=global_attrs['month'] )
-        else:
-            resampled: DataArrayResample = varray.resample(time=self.tstep)
-            newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
+ #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }"
+        varray = varray.interp(**scoords, assume_sorted=True)
+        resampled: DataArrayResample = varray.resample(time=self.tstep)
+        newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
         newvar.attrs.update(global_attrs)
         newvar.attrs.update(varray.attrs)
         for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
             if missing in newvar.attrs:
                 missing_value = newvar.attrs.pop('fmissing_value')
                 return newvar.where( newvar != missing_value, np.nan )
+        newvar = replace_nans(newvar, 'y').transpose(*self.corder, missing_dims="ignore")
         return newvar
 
-    def process_subsample(self, collection: str, dvars: List[str], files: List[str], year: int, month: int, **kwargs):
+
+    def process_subsample(self, collection: str, dvars: List[str], files: List[str], date: Date, **kwargs):
         reprocess: bool = kwargs.pop('reprocess', False)
         isconst = collection.startswith("const")
         for file in sorted(files):
             day = 0 if isconst else get_day_from_filename( file )
             dset: xa.Dataset = xa.open_dataset(file)
             dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-            filepath: str = collection_cache_filepath( cfg().preprocess.version, collection, day=day, month=month, year=year, **kwargs )
+            filepath: str = cache_filepath( cfg().preprocess.version, collection, date )
             if (not os.path.exists(filepath)) or reprocess:
                 mvars = {}
                 for dvar in dvars:
@@ -321,7 +320,7 @@ class MERRA2DataProcessor:
                 if len(mvars) > 0:
                     dset = xa.Dataset( mvars )
                     dset.to_netcdf(filepath, format="NETCDF4")
-                    print(f" >> Saving collection {collection}[{day}/{month}/{year}] to file '{filepath}'")
+                    print(f" >> Saving collection {collection}[{day}/{date.month}/{date.year}] to file '{filepath}'")
             else:
                 print( f" ** Skipping day {day} in collection {collection:12s} due to existence of processed file '{filepath}'")
             dset.close()
