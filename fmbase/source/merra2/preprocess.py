@@ -193,7 +193,7 @@ class MERRA2DataProcessor:
                 dset_list = const_files if isconst else dset_files
                 dset_list[collection] = (file_path, vlist)
             else:
-                print( f"\n WARNING: File does not exist: {file_path}")
+                print( f"WARNING: File does not exist: {file_path}")
         return dset_files, const_files
 
     def process_day(self, date: Date, **kwargs):
@@ -201,24 +201,27 @@ class MERRA2DataProcessor:
         cache_fpath: str = cache_filepath(cfg().preprocess.version, date)
         if (not os.path.exists(cache_fpath)) or reprocess:
             dset_files, const_files = self.get_daily_files(date)
-            mvars = {}
-            for collection, (file_path, dvars) in dset_files.items():
-                isconst = collection.startswith("const")
-                dset: xa.Dataset = xa.open_dataset(file_path)
-                dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-                for dvar in dvars:
-                    darray: xa.DataArray = dset.data_vars[dvar]
-                    qtype: QType = self.get_qtype(dvar)
-                    mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
-                    self.stats.add_entry( dvar, mvar )
-                    print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
-                    mvars[dvar] = mvar
-                dset.close()
-            if len(mvars) > 0:
-                dset = xa.Dataset(mvars)
-                os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
-                dset.to_netcdf(cache_fpath, format="NETCDF4")
-                print(f" >> Saving cache data for {date} to file '{cache_fpath}'")
+            if len(dset_files) == 0:
+                print( f"No data for date {date}")
+            else:
+                mvars = {}
+                for collection, (file_path, dvars) in dset_files.items():
+                    isconst = collection.startswith("const")
+                    dset: xa.Dataset = xa.open_dataset(file_path)
+                    dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
+                    for dvar in dvars:
+                        darray: xa.DataArray = dset.data_vars[dvar]
+                        qtype: QType = self.get_qtype(dvar)
+                        mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
+                        self.stats.add_entry( dvar, mvar )
+                        print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
+                        mvars[dvar] = mvar
+                    dset.close()
+                if len(mvars) > 0:
+                    dset = xa.Dataset(mvars)
+                    os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
+                    dset.to_netcdf(cache_fpath, format="NETCDF4")
+                    print(f" >> Saving cache data for {date} to file '{cache_fpath}'")
         else:
             print( f" ** Skipping date {date} due to existence of processed file '{cache_fpath}'")
 
