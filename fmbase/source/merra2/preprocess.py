@@ -201,11 +201,14 @@ class MERRA2DataProcessor:
         cache_fpath: str = cache_filepath(cfg().preprocess.version, date)
         if (not os.path.exists(cache_fpath)) or reprocess:
             dset_files, const_files = self.get_daily_files(date)
-            if len(dset_files) == 0:
-                print( f"No data for date {date}")
+            ncollections = len(dset_files.keys())
+            if ncollections == 0:
+                print( f"No collections for date {date}")
             else:
+                print(f"Processing {ncollections} collections for date {date}")
                 mvars = {}
                 for collection, (file_path, dvars) in dset_files.items():
+                    print(f"Processing({date}): {len(dvars)} vars for collection {collection}: {file_path}")
                     isconst = collection.startswith("const")
                     dset: xa.Dataset = xa.open_dataset(file_path)
                     dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
