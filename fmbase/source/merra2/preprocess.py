@@ -208,18 +208,22 @@ class MERRA2DataProcessor:
                 print(f"Processing {ncollections} collections for date {date}")
                 mvars = {}
                 for collection, (file_path, dvars) in dset_files.items():
-                    print(f"Processing({date}): {len(dvars)} vars for collection {collection}: {file_path}")
-                    isconst = collection.startswith("const")
-                    dset: xa.Dataset = xa.open_dataset(file_path)
-                    dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-                    for dvar in dvars:
-                        darray: xa.DataArray = dset.data_vars[dvar]
-                        qtype: QType = self.get_qtype(dvar)
-                        mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
-                        self.stats.add_entry( dvar, mvar )
-                        print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
-                        mvars[dvar] = mvar
-                    dset.close()
+ #                   print(f"Processing({date}): {len(dvars)} vars for collection {collection}: {file_path}")
+                    try:
+                        isconst = collection.startswith("const")
+                        dset: xa.Dataset = xa.open_dataset(file_path)
+                        dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
+                        for dvar in dvars:
+                            darray: xa.DataArray = dset.data_vars[dvar]
+                            qtype: QType = self.get_qtype(dvar)
+                            mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
+                            self.stats.add_entry( dvar, mvar )
+                            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
+                            mvars[dvar] = mvar
+                        dset.close()
+                    except Exception as err:
+                        print(f"ERROR processing ({date}): {len(dvars)} vars for collection {collection}: {file_path}")
+                        print( err )
                 if len(mvars) > 0:
                     dset = xa.Dataset(mvars)
                     os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
