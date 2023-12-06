@@ -251,8 +251,8 @@ class MERRA2DataProcessor:
 
     def subsample_coords(self, dvar: xa.DataArray ) -> Dict[str,np.ndarray]:
         subsample_coords: Dict[str,Any] = {}
- #       if (self.levels is not None) and ('z' in dvar.dims):
- #           subsample_coords['z'] = self.levels
+        if (self.levels is not None) and ('z' in dvar.dims):
+            subsample_coords['z'] = self.levels
         if self.xres is not None:
             if self.xext is  None:
                 xc0 = dvar.coords['x'].values
@@ -296,7 +296,7 @@ class MERRA2DataProcessor:
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
  #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }"
         try:
-            varray = varray.interp(**scoords, assume_sorted=True)
+            varray = varray.interp(**scoords, assume_sorted=False)
         except ValueError as err:
             print( f"ERROR: Interp error for variable{varray.dims}{varray.shape}: scoords={scoords} ")
             return  None
