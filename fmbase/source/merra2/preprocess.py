@@ -1,6 +1,6 @@
 import xarray as xa, pandas as pd
 import numpy as np
-from fmbase.util.config import cfg
+from fmbase.util.config import cfg, Date
 from typing import List, Union, Tuple, Optional, Dict, Type, Any
 import glob, sys, os, time
 from xarray.core.resample import DataArrayResample
@@ -177,8 +177,7 @@ class MERRA2DataProcessor:
             dset_files[collection] = (gfiles, vlist)
         return dset_files
 
-    def get_daily_files(self, date: Tuple[int,int,int] ) -> Tuple[ Dict[str, Tuple[str, List[str]]], Dict[str, Tuple[str, List[str]]] ]:
-        (day,month,year) = date
+    def get_daily_files(self, date: Date ) -> Tuple[ Dict[str, Tuple[str, List[str]]], Dict[str, Tuple[str, List[str]]] ]:
         dsroot: str = fmbdir('dataset_root')
         assert "{year}" in self.var_file_template, "{year} field missing from platform.cov_files parameter"
         dset_files:  Dict[str, Tuple[str, List[str]]] = {}
@@ -187,7 +186,7 @@ class MERRA2DataProcessor:
         for collection, vlist in self.vars.items():
             isconst = collection.startswith("const")
             if isconst : fpath: str = self.const_file_template.format(collection=collection)
-            else:        fpath: str = self.var_file_template.format(collection=collection, year=year, month=f"{month + 1:0>2}", day=f"{day + 1:0>2}")
+            else:        fpath: str = self.var_file_template.format(collection=collection, **date.skw )
             file_path = f"{dsroot}/{fpath}"
             if os.path.exists( file_path ):
                 dset_list = const_files if isconst else dset_files
@@ -196,7 +195,7 @@ class MERRA2DataProcessor:
                 print( f"\n WARNING: File does not exist: {file_path}")
         return dset_files, const_files
 
-    def process_day(self, date: Tuple[int,int,int], **kwargs):
+    def process_day(self, date: Date, **kwargs):
         dset_files, const_files = self.get_daily_files( date )
         reprocess: bool = kwargs.pop('reprocess', False)
         for collection, (file_path, dvars) in dset_files.items():
@@ -218,7 +217,7 @@ class MERRA2DataProcessor:
                     dset = xa.Dataset( mvars )
                     os.makedirs(os.path.dirname(cache_fpath), mode=0o777, exist_ok=True)
                     dset.to_netcdf(cache_fpath, format="NETCDF4")
-                    print(f" >> Saving collection {collection}{date} to file '{cache_fpath}'")
+                    print(f" >> Saving collection {collection}:{date} to file '{cache_fpath}'")
                 dset.close()
             else:
                 print( f" ** Skipping day {date} in collection {collection:12s} due to existence of processed file '{cache_fpath}'")

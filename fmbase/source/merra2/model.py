@@ -3,9 +3,8 @@ import os, numpy as np
 from typing import Any, Dict, List, Tuple, Type, Optional, Union, Sequence, Mapping
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
-from dataclasses import dataclass
+from fmbase.util.config import cfg, Date
 from fmbase.util.config import cfg
-import chex
 
 _SEC_PER_HOUR = 3600
 _HOUR_PER_DAY = 24
@@ -13,29 +12,8 @@ SEC_PER_DAY = _SEC_PER_HOUR * _HOUR_PER_DAY
 _AVG_DAY_PER_YEAR = 365.24219
 AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
 
-@chex.dataclass(frozen=True, eq=True)
-class Date:
-	day: int
-	month: int
-	year: int
-
-	@property
-	def kw(self):
-		return dict( day=self.day, month=self.month, year=self.year )
-
-	def __str__(self):
-		return f'{self.year:04}{self.month:02}{self.day:02}'
-
-	def __repr__(self):
-		return f'{self.year}-{self.month}-{self.day}'
-
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
-
-@dataclass(eq=True,repr=True,frozen=True,order=True)
-class YearMonth:
-	year: int
-	month: int
 
 def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
 	if "year" in kwargs:
