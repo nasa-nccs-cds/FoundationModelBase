@@ -212,8 +212,8 @@ class MERRA2DataProcessor:
                     dset: xa.Dataset = xa.open_dataset(file_path)
                     dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
                     for dvar in dvars:
+                        darray: xa.DataArray = dset.data_vars[dvar]
                         try:
-                            darray: xa.DataArray = dset.data_vars[dvar]
                             qtype: QType = self.get_qtype(dvar)
                             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
                             self.stats.add_entry( dvar, mvar )
