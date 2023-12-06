@@ -213,17 +213,11 @@ class MERRA2DataProcessor:
                     dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
                     for dvar in dvars:
                         darray: xa.DataArray = dset.data_vars[dvar]
-                        try:
-                            qtype: QType = self.get_qtype(dvar)
-                            mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
-                            if mvar is not None:
-                                self.stats.add_entry( dvar, mvar )
-                                print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
-                                mvars[dvar] = mvar
-                        except Exception as err:
-                            print(f"ERROR processing var {collection}:{dvar}{darray.dims} {darray.shape}: ({date}) {file_path}")
-                        #    traceback.print_exc()
-                            raise err
+                        qtype: QType = self.get_qtype(dvar)
+                        mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst)
+                        self.stats.add_entry( dvar, mvar )
+                        print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
+                        mvars[dvar] = mvar
                     dset.close()
                 if len(mvars) > 0:
                     dset = xa.Dataset(mvars)
@@ -295,13 +289,9 @@ class MERRA2DataProcessor:
             varray = varray.isel( time=0, drop=True )
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
  #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }"
-        try:
-            varray = varray.interp( x=scoords['x'], y=scoords['y'], assume_sorted=True)
-            if 'z' in scoords:
-                varray = varray.interp( z=scoords['z'], assume_sorted=False )
-        except ValueError as err:
-            print( f"ERROR: Interp error for variable{varray.dims}{varray.shape}: scoords={scoords} ")
-            return  None
+        varray = varray.interp( x=scoords['x'], y=scoords['y'], assume_sorted=True)
+        if 'z' in scoords:
+            varray = varray.interp( z=scoords['z'], assume_sorted=False )
         resampled: DataArrayResample = varray.resample(time=self.tstep)
         newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
         newvar.attrs.update(global_attrs)
