@@ -10,6 +10,10 @@ np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
+
+def nodata_test(varray: xa.DataArray, vname: str, date: Date):
+    num_nodata = nnan(varray)
+    assert num_nodata == 0, f"ERROR: {num_nodata} Nodata values found in variable {vname} for date {date}"
 def nmissing(varray: xa.DataArray) -> int:
     mval = varray.attrs.get('fmissing_value',-9999)
     return np.count_nonzero(varray.values == mval)
@@ -236,6 +240,7 @@ class MERRA2DataProcessor:
             qtype: QType = self.get_qtype(dvar)
             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst )
             self.stats.add_entry(dvar, mvar)
+            nodata_test( darray, dvar, date )
             print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape} for {date}")
             mvars[dvar] = mvar
         dset.close()
@@ -317,8 +322,7 @@ class MERRA2DataProcessor:
             if missing in newvar.attrs:
                 missing_value = newvar.attrs.pop('fmissing_value')
                 return newvar.where( newvar != missing_value, np.nan )
-        newvar = replace_nans(newvar, 'y').transpose(*self.corder, missing_dims="ignore")
-        return newvar
+        return replace_nans(newvar, 'y').transpose(*self.corder, missing_dims="ignore" )
 
     def process_subsample(self, collection: str, dvars: List[str], files: List[str], date: Date, **kwargs):
         reprocess: bool = kwargs.pop('reprocess', False)
