@@ -92,9 +92,9 @@ def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
 		filepath = cache_var_filepath(version, date)
 		#	if not os.path.exists( filepath ):
 		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-		var_map = {vid:newid for vid,newid in task_config.get('coords',{}).items() if vid in dataset.coords.keys() }
-		print( f"load_batch: var_map = {var_map}, task coords={task_config.get('coords',{})}, dset coords={list(dataset.coords.keys())}")
-		slices.append( dataset.rename(var_map) )
+		model_varname_map = {v: k for k, v in task_config['input_variables'].items() if v in dataset.data_vars}
+		model_coord_map = {k: v for k, v in task_config['coords'].items() if k in dataset.coords}
+		slices.append( dataset.rename(**model_varname_map, **model_coord_map) )
 	return merge_batch( slices )
 
 def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:
