@@ -59,7 +59,7 @@ def merge_batch( slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset
 	for vname, dvar in sample.data_vars.items():
 		if vname not in dynamics.data_vars.keys():
 			constants[vname] = dvar
-	return xa.merge( [dynamics, constants] )
+	return xa.merge( [dynamics, constants], compat='override' )
 
 # def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
 # 	vnames = kwargs.pop('vars',None)
