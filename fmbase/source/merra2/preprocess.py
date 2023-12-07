@@ -230,11 +230,11 @@ class MERRA2DataProcessor:
         else:
             print( f" ** Skipping date {date} due to existence of processed file '{cache_fvpath}'")
 
-    def load_collection(self, collection, file_path: str, dvars: List[str], date: Date, **kwargs) -> Optional[xa.Dataset]:
+    def load_collection(self, collection: str, file_path: str, dvars: List[str], date: Date, **kwargs) -> Optional[xa.Dataset]:
         dset: xa.Dataset = xa.open_dataset(file_path)
-        isconst = kwargs.pop( 'isconst', False )
-        dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
-        mvars = {}
+        isconst: bool = kwargs.pop( 'isconst', False )
+        dset_attrs: Dict = dict(collection=collection, **dset.attrs, **kwargs)
+        mvars: Dict[str,xa.DataArray] = {}
         for dvar in dvars:
             darray: xa.DataArray = dset.data_vars[dvar]
             qtype: QType = self.get_qtype(dvar)
