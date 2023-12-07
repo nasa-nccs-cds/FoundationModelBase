@@ -15,37 +15,11 @@ AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
 
-def variable_cache_filepath(version: str, vname: str, **kwargs) -> str:
-	if "year" in kwargs:
-		if "month" in kwargs:
-			if "day" in kwargs:   filename = "{varname}_{year}-{month}-{day}.nc".format(varname=vname, **kwargs)
-			else:				  filename = "{varname}_{year}-{month}.nc".format(varname=vname, **kwargs)
-		else:                     filename = "{varname}_{year}.nc".format(varname=vname, **kwargs)
-	else:                         filename = "{varname}.nc".format(varname=vname, **kwargs)
-	return f"{fmbdir('processed')}/{version}/{filename}"
-
 def cache_var_filepath(version: str, date: Date) -> str:
 	return f"{fmbdir('processed')}/{version}/{repr(date)}.nc"
 
 def cache_const_filepath(version: str) -> str:
 	return f"{fmbdir('processed')}/{version}/const.nc"
-
-def load_cache_var( version: str, dvar: str, date: Date, task: Dict, **kwargs  ) -> Optional[xa.DataArray]:
-	coord_map: Dict = task.get('coords',{})
-	filepath = variable_cache_filepath(version, dvar, **date.kw)
-	if not os.path.exists( filepath ):
-		filepath = variable_cache_filepath( version, dvar )
-	try:
-		darray: xa.DataArray = xa.open_dataarray(filepath,**kwargs)
-		# if 'time' in darray.coords:
-		# 	vtime: List[str] = [str(pd.Timestamp(dt64)) for dt64 in darray.coords['time'].values.tolist()]
-		# 	print( f" ***>> load_cache_var[{dvar}({day}/{month}/{year})]: dims={darray.dims} shape={darray.shape} time={vtime}, filepath={filepath}" )
-		cmap: Dict = { k:v for k,v in coord_map.items() if k in darray.coords.keys()}
-		result = darray.rename(cmap).compute()
-		darray.close()
-		return result
-	except FileNotFoundError:
-		print( f"Not reading variable {dvar} (data file does not exist): {filepath}")
 
 def get_year_progress(seconds_since_epoch: np.ndarray) -> np.ndarray:
   years_since_epoch = ( seconds_since_epoch / SEC_PER_DAY / np.float64(_AVG_DAY_PER_YEAR) )
@@ -99,7 +73,7 @@ def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
 	cmap = task['coords']
 	zc, yc, corder = cmap['z'], cmap['y'], [ cmap[cn] for cn in ['t','z','y','x'] ]
 	tsdata = {}
-	filepath = cache_filepath(version, **date.kw)
+	filepath = cache_var_filepath(version, date)
 #	if not os.path.exists( filepath ):
 	dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
 	print(f"  load_timestep({date}), constants={constants}, kwargs={kwargs} ")
@@ -118,7 +92,7 @@ def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
 	slices: List[xa.Dataset] = []
 	version = task_config['dataset_version']
 	for date in dates:
-		filepath = cache_filepath(version, **date.kw)
+		filepath = cache_var_filepath(version, date)
 		#	if not os.path.exists( filepath ):
 		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
 		slices.append( dataset )
