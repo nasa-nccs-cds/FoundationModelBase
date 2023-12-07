@@ -22,36 +22,34 @@ def cache_const_filepath(version: str) -> str:
 	return f"{fmbdir('processed')}/{version}/const.nc"
 
 def get_year_progress(seconds_since_epoch: np.ndarray) -> np.ndarray:
-  years_since_epoch = ( seconds_since_epoch / SEC_PER_DAY / np.float64(_AVG_DAY_PER_YEAR) )
-  yp = np.mod(years_since_epoch, 1.0).astype(np.float32)
-  return yp
+	years_since_epoch = ( seconds_since_epoch / SEC_PER_DAY / np.float64(_AVG_DAY_PER_YEAR) )
+	yp = np.mod(years_since_epoch, 1.0).astype(np.float32)
+	return yp
 
 def get_day_progress( seconds_since_epoch: np.ndarray, longitude: np.ndarray ) -> np.ndarray:
-  day_progress_greenwich = ( np.mod(seconds_since_epoch, SEC_PER_DAY) / SEC_PER_DAY )
-  longitude_offsets = np.deg2rad(longitude) / (2 * np.pi)
-  day_progress = np.mod( day_progress_greenwich[..., np.newaxis] + longitude_offsets, 1.0 )
-  return day_progress.astype(np.float32)
+	day_progress_greenwich = ( np.mod(seconds_since_epoch, SEC_PER_DAY) / SEC_PER_DAY )
+	longitude_offsets = np.deg2rad(longitude) / (2 * np.pi)
+	day_progress = np.mod( day_progress_greenwich[..., np.newaxis] + longitude_offsets, 1.0 )
+	return day_progress.astype(np.float32)
 
 def featurize_progress( name: str, dims: Sequence[str], progress: np.ndarray ) -> Mapping[str, xa.Variable]:
-  if len(dims) != progress.ndim:
-    raise ValueError( f"Number of dimensions in feature {name}{dims} must be equal to the number of dimensions in progress{progress.shape}." )
-  else: print( f"featurize_progress: {name}{dims} --> progress{progress.shape} ")
-  progress_phase = progress * (2 * np.pi)
-  return { name: xa.Variable(dims, progress), name + "_sin": xa.Variable(dims, np.sin(progress_phase)), name + "_cos": xa.Variable(dims, np.cos(progress_phase)) }
+	if len(dims) != progress.ndim:
+		raise ValueError( f"Number of dimensions in feature {name}{dims} must be equal to the number of dimensions in progress{progress.shape}." )
+	else: print( f"featurize_progress: {name}{dims} --> progress{progress.shape} ")
+	progress_phase = progress * (2 * np.pi)
+	return { name: xa.Variable(dims, progress), name + "_sin": xa.Variable(dims, np.sin(progress_phase)), name + "_cos": xa.Variable(dims, np.cos(progress_phase)) }
 
 def add_derived_vars(data: xa.Dataset) -> None:
-  for coord in ("datetime", "lon"):
-    if coord not in data.coords:
-      raise ValueError(f"'{coord}' must be in `data` coordinates: {list(data.coords.keys())}.")
-  seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
-  batch_dim = ("batch",) if "batch" in data.dims else ()
-  year_progress = get_year_progress(seconds_since_epoch)
-  data.update( featurize_progress( name=cfg().preprocess.year_progress, dims=batch_dim + ("time",), progress=year_progress ) )
-  longitude_coord = data.coords["lon"]
-  day_progress = get_day_progress(seconds_since_epoch, longitude_coord.data)
-  data.update( featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
-  if 'datetime' not in data.coords:
-	  data.coords['datetime'] = data.coords['time'].expand_dims("batch")
+	if 'datetime' not in data.coords:
+		data.coords['datetime'] = data.coords['time'].expand_dims("batch")
+	seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
+	batch_dim = ("batch",) if "batch" in data.dims else ()
+	year_progress = get_year_progress(seconds_since_epoch)
+	data.update( featurize_progress( name=cfg().preprocess.year_progress, dims=batch_dim + ("time",), progress=year_progress ) )
+	longitude_coord = data.coords["lon"]
+	day_progress = get_day_progress(seconds_since_epoch, longitude_coord.data)
+	data.update( featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
+
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
