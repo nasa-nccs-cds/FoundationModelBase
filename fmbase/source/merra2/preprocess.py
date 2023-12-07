@@ -11,7 +11,7 @@ from enum import Enum
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 
-def nodata_test(varray: xa.DataArray, vname: str, date: Date):
+def nodata_test(vname: str, varray: xa.DataArray, date: Date):
     num_nodata = nnan(varray)
     assert num_nodata == 0, f"ERROR: {num_nodata} Nodata values found in variable {vname} for date {date}"
 def nmissing(varray: xa.DataArray) -> int:
@@ -240,6 +240,7 @@ class MERRA2DataProcessor:
             qtype: QType = self.get_qtype(dvar)
             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst )
             self.stats.add_entry(dvar, mvar)
+            nodata_test( dvar, mvar, date )
             print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape} for {date}")
             mvars[dvar] = mvar
         dset.close()
@@ -302,15 +303,16 @@ class MERRA2DataProcessor:
         varray = varray.interp( x=scoords['x'], y=scoords['y'], assume_sorted=True)
         if 'z' in scoords:
             varray = varray.interp( z=scoords['z'], assume_sorted=False )
-        resampled: DataArrayResample = varray.resample(time=self.tstep)
-        newvar: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
-        newvar.attrs.update(global_attrs)
-        newvar.attrs.update(varray.attrs)
+        if 'time' in varray.dims:
+            resampled: DataArrayResample = varray.resample(time=self.tstep)
+            varray: xa.DataArray = resampled.mean() if qtype == QType.Intensive else resampled.sum()
+        varray.attrs.update(global_attrs)
+        varray.attrs.update(varray.attrs)
         for missing in [ 'fmissing_value', 'missing_value', 'fill_value' ]:
-            if missing in newvar.attrs:
-                missing_value = newvar.attrs.pop('fmissing_value')
-                return newvar.where( newvar != missing_value, np.nan )
-        return replace_nans(newvar, 'y').transpose(*self.corder, missing_dims="ignore" )
+            if missing in varray.attrs:
+                missing_value = varray.attrs.pop('fmissing_value')
+                varray = varray.where( varray != missing_value, np.nan )
+        return replace_nans(varray, 'y').transpose(*self.corder, missing_dims="ignore" )
 
 def stats_filepath( version: str, statname: str ) -> str:
     return f"{fmbdir('processed')}/{version}/stats/{statname}.nc"
