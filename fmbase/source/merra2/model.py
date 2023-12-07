@@ -84,18 +84,20 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 # 			tsdata[vname] = varray
 # 	return xa.Dataset( tsdata )
 
-
 def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
-	slices: List[xa.Dataset] = []
-	version = task_config['dataset_version']
-	for date in dates:
-		filepath = cache_var_filepath(version, date)
-		#	if not os.path.exists( filepath ):
-		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-		model_varname_map = {v: k for k, v in task_config['input_variables'].items() if v in dataset.data_vars}
-		model_coord_map = {k: v for k, v in task_config['coords'].items() if k in dataset.coords}
-		slices.append( dataset.rename(**model_varname_map, **model_coord_map) )
+	slices: List[xa.Dataset] = [ load_dataset(  task_config, date=date, **kwargs ) for date in dates ]
+	slices.append( load_dataset(task_config, const=True, **kwargs) )
 	return merge_batch( slices )
+
+def load_dataset( task_config: Dict, **kwargs ):
+	version = task_config['dataset_version']
+	const = kwargs.pop( 'const', False )
+	date = kwargs.pop( 'date', None )
+	filepath =  cache_const_filepath(version)  if const else cache_var_filepath(version, date)
+	dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
+	model_varname_map = {v: k for k, v in task_config['input_variables'].items() if v in dataset.data_vars}
+	model_coord_map = {k: v for k, v in task_config['coords'].items() if k in dataset.coords}
+	return dataset.rename(**model_varname_map, **model_coord_map)
 
 def to_feature_array( data_batch: xa.Dataset) -> xa.DataArray:
 	features = xa.DataArray(data=list(data_batch.data_vars.keys()), name="features")
