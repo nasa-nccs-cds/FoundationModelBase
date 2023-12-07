@@ -310,7 +310,7 @@ class MERRA2DataProcessor:
         if isconst and ("time" in varray.dims):
             varray = varray.isel( time=0, drop=True )
         scoords: Dict[str, np.ndarray] = self.subsample_coords(varray)
- #       print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }"
+        print(f" **** subsample {variable.name}, dims={varray.dims}, shape={varray.shape}, new sizes: { {cn:cv.size for cn,cv in scoords.items()} }")
         varray = varray.interp( x=scoords['x'], y=scoords['y'], assume_sorted=True)
         if 'z' in scoords:
             varray = varray.interp( z=scoords['z'], assume_sorted=False )
