@@ -61,28 +61,28 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 			merged[vname] = dvar
 	return merged
 
-def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
-	vnames = kwargs.pop('vars',None)
-	vlist: Dict[str, str] = task['input_variables']
-	constants: List[str] = task['constants']
-	levels: Optional[np.ndarray] = get_levels_config(task)
-	version = task['dataset_version']
-	cmap = task['coords']
-	zc, yc, corder = cmap['z'], cmap['y'], [ cmap[cn] for cn in ['t','z','y','x'] ]
-	tsdata = {}
-	filepath = cache_var_filepath(version, date)
-#	if not os.path.exists( filepath ):
-	dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-	print(f"  load_timestep({date}), constants={constants}, kwargs={kwargs} ")
-	for vname,dsname in vlist.items():
-		if (vnames is None) or (vname in vnames):
-			varray: xa.DataArray = dataset.data_vars[vname]
-			if (vname in constants) and ("time" in varray.dims):
-				varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
-			varray.attrs['dset_name'] = dsname
-			print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
-			tsdata[vname] = varray
-	return xa.Dataset( tsdata )
+# def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
+# 	vnames = kwargs.pop('vars',None)
+# 	vlist: Dict[str, str] = task['input_variables']
+# 	constants: List[str] = task['constants']
+# 	levels: Optional[np.ndarray] = get_levels_config(task)
+# 	version = task['dataset_version']
+# 	cmap = task['coords']
+# 	zc, yc, corder = cmap['z'], cmap['y'], [ cmap[cn] for cn in ['t','z','y','x'] ]
+# 	tsdata = {}
+# 	filepath = cache_var_filepath(version, date)
+# #	if not os.path.exists( filepath ):
+# 	dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
+# 	print(f"  load_timestep({date}), constants={constants}, kwargs={kwargs} ")
+# 	for vname,dsname in vlist.items():
+# 		if (vnames is None) or (vname in vnames):
+# 			varray: xa.DataArray = dataset.data_vars[vname]
+# 			if (vname in constants) and ("time" in varray.dims):
+# 				varray = varray.mean( dim="time", skipna=True, keep_attrs=True )
+# 			varray.attrs['dset_name'] = dsname
+# 			print( f" >> Load_var({dsname}): name={vname}, shape={varray.shape}, dims={varray.dims}, zc={zc}, mean={varray.values.mean()}, nnan={nnan(varray)} ({pctnan(varray)})")
+# 			tsdata[vname] = varray
+# 	return xa.Dataset( tsdata )
 
 
 def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
@@ -91,7 +91,7 @@ def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
 	for date in dates:
 		filepath = cache_var_filepath(version, date)
 		#	if not os.path.exists( filepath ):
-		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
+		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs).rename( task_config['coords'] )
 		slices.append( dataset )
 	return merge_batch( slices )
 
