@@ -42,7 +42,7 @@ def featurize_progress( name: str, dims: Sequence[str], progress: np.ndarray ) -
 def add_derived_vars(data: xa.Dataset) -> None:
   for coord in ("datetime", "lon"):
     if coord not in data.coords:
-      raise ValueError(f"'{coord}' must be in `data` coordinates.")
+      raise ValueError(f"'{coord}' must be in `data` coordinates: {list(data.coords.keys())}.")
   seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
   batch_dim = ("batch",) if "batch" in data.dims else ()
   year_progress = get_year_progress(seconds_since_epoch)
@@ -50,13 +50,13 @@ def add_derived_vars(data: xa.Dataset) -> None:
   longitude_coord = data.coords["lon"]
   day_progress = get_day_progress(seconds_since_epoch, longitude_coord.data)
   data.update( featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
+  if 'datetime' not in data.coords:
+	  data.coords['datetime'] = data.coords['time'].expand_dims("batch")
 
 def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
 	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
 	merged = merged.drop_vars(cvars)
-	if 'datetime' not in merged.coords:
-		merged.coords['datetime'] = merged.coords['time'].expand_dims("batch")
 	sample: xa.Dataset = slices[0]
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
