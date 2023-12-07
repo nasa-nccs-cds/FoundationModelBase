@@ -209,14 +209,14 @@ class MERRA2DataProcessor:
             else:
                 print(f"Processing {ncollections} collections for date {date}")
                 for collection, (file_path, dvars) in dset_files.items():
-                    collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, **kwargs )
+                    collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, date, **kwargs )
                     if collection_dset is not None:
                         collection_dset.to_netcdf(cache_fvpath, format="NETCDF4")
                         print(f" >> Saving cache data for {date} to file '{cache_fvpath}'")
                 if not os.path.exists(cache_fcpath):
                     const_dsets: List[xa.Dataset] = []
                     for collection, (file_path, dvars) in const_files.items():
-                        collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, isconst=True, **kwargs )
+                        collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, date, isconst=True, **kwargs )
                         if collection_dset is not None: const_dsets.append( collection_dset )
                     if len( const_dsets ) > 0:
                         xa.merge(const_dsets).to_netcdf(cache_fcpath, format="NETCDF4")
@@ -226,7 +226,7 @@ class MERRA2DataProcessor:
         else:
             print( f" ** Skipping date {date} due to existence of processed file '{cache_fvpath}'")
 
-    def load_collection(self, collection, file_path: str, dvars: List[str], **kwargs) -> Optional[xa.Dataset]:
+    def load_collection(self, collection, file_path: str, dvars: List[str], date: Date, **kwargs) -> Optional[xa.Dataset]:
         dset: xa.Dataset = xa.open_dataset(file_path)
         isconst = kwargs.pop( 'isconst', False )
         dset_attrs = dict(collection=collection, **dset.attrs, **kwargs)
@@ -236,7 +236,7 @@ class MERRA2DataProcessor:
             qtype: QType = self.get_qtype(dvar)
             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst )
             self.stats.add_entry(dvar, mvar)
-            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape}")
+            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape} for {date}")
             mvars[dvar] = mvar
         dset.close()
         if len( mvars ) > 0:
