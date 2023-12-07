@@ -13,7 +13,8 @@ nproc = cpu_count()-2
 
 def process( date: Date ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
-	return reader.process_day( date, reprocess=reprocess)
+	reader.process_day( date, reprocess=reprocess)
+	return reader.stats
 
 if __name__ == '__main__':
 	dates: List[Date] = Date.get_dates()
