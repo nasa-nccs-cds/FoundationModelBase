@@ -51,15 +51,15 @@ def add_derived_vars(data: xa.Dataset) -> None:
 	data.update( featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
 
 
-def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
+def merge_batch( slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset:
 	cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
-	merged: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
-	merged = merged.drop_vars(cvars)
-	sample: xa.Dataset = slices[0]
+	dynamics: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
+	dynamics = dynamics.drop_vars(cvars)
+	sample: xa.Dataset = slices[0].drop_dims( 'time', errors='ignore' )
 	for vname, dvar in sample.data_vars.items():
-		if vname not in merged.data_vars.keys():
-			merged[vname] = dvar
-	return merged
+		if vname not in dynamics.data_vars.keys():
+			constants[vname] = dvar
+	return xa.merge( [dynamics, constants] )
 
 # def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
 # 	vnames = kwargs.pop('vars',None)
@@ -85,9 +85,9 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 # 	return xa.Dataset( tsdata )
 
 def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
-	slices: List[xa.Dataset] = [ load_dataset(  task_config, date=date, **kwargs ) for date in dates ]
-	slices.append( load_dataset(task_config, const=True, **kwargs) )
-	return merge_batch( slices )
+	time_slices: List[xa.Dataset] = [ load_dataset(  task_config, date=date, **kwargs ) for date in dates ]
+	constants: xa.Dataset = load_dataset(task_config, const=True, **kwargs)
+	return merge_batch( time_slices, constants )
 
 def load_dataset( task_config: Dict, **kwargs ):
 	version = task_config['dataset_version']
