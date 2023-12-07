@@ -92,7 +92,8 @@ def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
 		filepath = cache_var_filepath(version, date)
 		#	if not os.path.exists( filepath ):
 		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-		var_map = {vid:newid for vid,newid in task_config.get('coords',{}).items() if vid in dataset.data_vars.keys() }
+		var_map = {vid:newid for vid,newid in task_config.get('coords',{}).items() if vid in dataset.coords.keys() }
+		print( f"load_batch: var_map = {var_map}, coords={task_config.get('coords',{})}")
 		slices.append( dataset.rename(var_map) )
 	return merge_batch( slices )
 
