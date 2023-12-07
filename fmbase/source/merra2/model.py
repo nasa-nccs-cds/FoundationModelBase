@@ -59,7 +59,6 @@ def merge_batch( slices: List[xa.Dataset] ) -> xa.Dataset:
 	for vname, dvar in sample.data_vars.items():
 		if vname not in merged.data_vars.keys():
 			merged[vname] = dvar
-	add_derived_vars(merged)
 	return merged
 
 def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
