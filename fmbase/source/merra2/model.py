@@ -42,12 +42,11 @@ def featurize_progress( name: str, dims: Sequence[str], progress: np.ndarray ) -
 def add_derived_vars(data: xa.Dataset) -> None:
 	if 'datetime' not in data.coords:
 		data.coords['datetime'] = data.coords['time'].expand_dims("batch")
-	print( f" >>> add_derived_vars: coords = {list(data.coords.keys())}")
 	seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
 	batch_dim = ("batch",) if "batch" in data.dims else ()
 	year_progress = get_year_progress(seconds_since_epoch)
 	data.update( featurize_progress( name=cfg().preprocess.year_progress, dims=batch_dim + ("time",), progress=year_progress ) )
-	longitude_coord = data.coords["lon"]
+	longitude_coord = data.coords["x"]
 	day_progress = get_day_progress(seconds_since_epoch, longitude_coord.data)
 	data.update( featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
 
