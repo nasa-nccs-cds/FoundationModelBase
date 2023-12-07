@@ -203,11 +203,16 @@ class MERRA2DataProcessor:
             if ncollections == 0:
                 print( f"No collections found for date {date}")
             else:
+                collection_dsets: List[xa.Dataset] = []
                 for collection, (file_path, dvars) in dset_files.items():
                     collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, date, **kwargs )
-                    if collection_dset is not None:
-                        collection_dset.to_netcdf(cache_fvpath, format="NETCDF4")
-                        print(f" >> Saving cache data for {date} to file '{cache_fvpath}'")
+                    if collection_dset is not None: collection_dsets.append(collection_dset)
+                if len(collection_dsets) > 0:
+                    xa.merge(collection_dsets).to_netcdf(cache_fvpath, format="NETCDF4")
+                    print(f" >> Saving collection data for {date} to file '{cache_fvpath}'")
+                else:
+                    print(f" >> No collection data found for date {date}")
+
                 if not os.path.exists(cache_fcpath):
                     const_dsets: List[xa.Dataset] = []
                     for collection, (file_path, dvars) in const_files.items():
@@ -215,9 +220,9 @@ class MERRA2DataProcessor:
                         if collection_dset is not None: const_dsets.append( collection_dset )
                     if len( const_dsets ) > 0:
                         xa.merge(const_dsets).to_netcdf(cache_fcpath, format="NETCDF4")
-                        print(f" >> Saving cache data for {date} to file '{cache_fcpath}'")
+                        print(f" >> Saving const data to file '{cache_fcpath}'")
                     else:
-                        print(f" >> No constant data found for date {date}")
+                        print(f" >> No constant data found")
         else:
             print( f" ** Skipping date {date} due to existence of processed file '{cache_fvpath}'")
 
