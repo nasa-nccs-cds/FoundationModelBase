@@ -1,5 +1,5 @@
 version:    'merra2.findtuning'
-year_range: [1985,1986,1] # [1984,2022,1]
+year_range: [1984,2022,1]
 tstep: "6H"
 xres: 1.0
 yres: 1.0

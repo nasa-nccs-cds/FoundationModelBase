@@ -51,7 +51,7 @@ class Date:
 
 	@classmethod
 	def days( cls, num_days: int )-> List["Date"]:
-		year, month, day = cfg().model.year, cfg().model.month, cfg().model.day
+		year, month, day = cfg().task.year, cfg().task.month, cfg().task.day
 		return [Date(year=year, month=month, day=day1) for day1 in range(day, day + num_days)]
 class ConfigBase(ABC):
     _instance = None

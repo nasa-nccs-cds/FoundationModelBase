@@ -1,5 +1,0 @@
-defaults:
-  - platform: explore
-  - preprocess: graphcast.exp1
-
-cid: graphcast.exp1

@@ -1,5 +1,0 @@
-defaults:
-  - platform: explore
-  - preprocess: era5-small
-
-cid: era5-small
