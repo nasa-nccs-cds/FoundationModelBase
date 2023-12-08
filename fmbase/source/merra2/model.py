@@ -63,7 +63,7 @@ def merge_batch( slices: List[xa.Dataset], constants: xa.Dataset, task: Dict ) -
 		elif (vname in constant_vars) and ("time" in dvar.dims):
 			dvar = dvar.mean(dim="time", skipna=True, keep_attrs=True)
 			constants[vname] = dvar
-	dynamics = dynamics.drop_vars(constant_vars)
+	dynamics = dynamics.drop_vars(constant_vars, errors='ignore')
 	return xa.merge( [dynamics, constants], compat='override' )
 
 
