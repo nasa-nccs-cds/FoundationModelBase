@@ -48,6 +48,11 @@ class Date:
 		months = kwargs.get( 'months', list(range(0, 12, 1)) )
 		days = kwargs.get( 'days', list(range(0, 31, 1)) )
 		return [ Date(day=day, month=month, year=year) for year in years for month in months for day in days ]
+
+	@classmethod
+	def days( cls, num_days: int )-> List["Date"]:
+		year, month, day = cfg().model.year, cfg().model.month, cfg().model.day
+		return [Date(year=year, month=month, day=day1) for day1 in range(day, day + num_days)]
 class ConfigBase(ABC):
     _instance = None
     _instantiated = None
