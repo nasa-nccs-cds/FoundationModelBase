@@ -1,7 +1,8 @@
 from fmbase.source.merra2.preprocess import MERRA2DataProcessor, StatsAccumulator
 from fmbase.util.config import configure, cfg
 from typing import List, Tuple
-from fmbase.util.config import Date
+from datetime import date
+from fmbase.util.dates import year_range
 from fmbase.source.merra2.model import cache_const_filepath
 from multiprocessing import Pool, cpu_count
 import hydra, os
@@ -10,14 +11,15 @@ hydra.initialize( version_base=None, config_path="../config" )
 configure( 'merra2-finetuning' )
 reprocess=False
 nproc = cpu_count()-2
+yrange: Tuple[int,int] = cfg().preprocess.year_range
 
-def process( date: Date ) -> StatsAccumulator:
+def process( d: date ) -> StatsAccumulator:
 	reader = MERRA2DataProcessor()
-	reader.process_day( date, reprocess=reprocess)
+	reader.process_day( d, reprocess=reprocess)
 	return reader.stats
 
 if __name__ == '__main__':
-	dates: List[Date] = Date.get_dates()
+	dates: List[date] = year_range( *yrange )
 	print( f"Multiprocessing {len(dates)} days with {nproc} procs")
 	if reprocess: os.remove( cache_const_filepath(cfg().preprocess.version) )
 	with Pool(processes=nproc) as pool:

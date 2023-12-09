@@ -1,8 +1,10 @@
 import xarray as xa, pandas as pd
 import numpy as np
-from fmbase.util.config import cfg, Date
+from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type, Any
 import glob, sys, os, time, traceback
+from fmbase.util.dates import skw, dstr
+from datetime import date
 from xarray.core.resample import DataArrayResample
 from fmbase.util.ops import get_levels_config, increasing, replace_nans
 from fmbase.source.merra2.model import cache_var_filepath, cache_const_filepath, fmbdir, add_derived_vars
@@ -11,9 +13,9 @@ from enum import Enum
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 
-def nodata_test(vname: str, varray: xa.DataArray, date: Date):
+def nodata_test(vname: str, varray: xa.DataArray, d: date):
     num_nodata = nnan(varray)
-    assert num_nodata == 0, f"ERROR: {num_nodata} Nodata values found in variable {vname} for date {date}"
+    assert num_nodata == 0, f"ERROR: {num_nodata} Nodata values found in variable {vname} for date {d}"
 def nmissing(varray: xa.DataArray) -> int:
     mval = varray.attrs.get('fmissing_value',-9999)
     return np.count_nonzero(varray.values == mval)
@@ -182,45 +184,45 @@ class MERRA2DataProcessor:
             dset_files[collection] = (gfiles, vlist)
         return dset_files
 
-    def get_daily_files(self, date: Date ) -> Tuple[ Dict[str, Tuple[str, List[str]]], Dict[str, Tuple[str, List[str]]] ]:
+    def get_daily_files(self, d: date) -> Tuple[ Dict[str, Tuple[str, List[str]]], Dict[str, Tuple[str, List[str]]]]:
         dsroot: str = fmbdir('dataset_root')
         dset_files:  Dict[str, Tuple[str, List[str]]] = {}
         const_files: Dict[str, Tuple[str, List[str]]] = {}
         for collection, vlist in self.vars.items():
             isconst = collection.startswith("const")
             if isconst : fpath: str = self.const_file_template.format(collection=collection)
-            else:        fpath: str = self.var_file_template.format(collection=collection, **date.skw )
+            else:        fpath: str = self.var_file_template.format(collection=collection, **skw(d))
             file_path = f"{dsroot}/{fpath}"
             if os.path.exists( file_path ):
                 dset_list = const_files if isconst else dset_files
                 dset_list[collection] = (file_path, vlist)
         return dset_files, const_files
 
-    def process_day(self, date: Date, **kwargs):
+    def process_day(self, d: date, **kwargs):
         reprocess: bool = kwargs.pop('reprocess', False)
-        cache_fvpath: str = cache_var_filepath(cfg().preprocess.version, date)
+        cache_fvpath: str = cache_var_filepath(cfg().preprocess.version, d)
         os.makedirs(os.path.dirname(cache_fvpath), mode=0o777, exist_ok=True)
         if (not os.path.exists(cache_fvpath)) or reprocess:
             cache_fcpath: str = cache_const_filepath(cfg().preprocess.version)
-            dset_files, const_files = self.get_daily_files(date)
+            dset_files, const_files = self.get_daily_files(d)
             ncollections = len(dset_files.keys())
             if ncollections == 0:
-                print( f"No collections found for date {date}")
+                print( f"No collections found for date {d}")
             else:
                 collection_dsets: List[xa.Dataset] = []
                 for collection, (file_path, dvars) in dset_files.items():
-                    collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, date, **kwargs )
+                    collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, d, **kwargs)
                     if collection_dset is not None: collection_dsets.append(collection_dset)
                 if len(collection_dsets) > 0:
                     xa.merge(collection_dsets).to_netcdf(cache_fvpath, format="NETCDF4")
-                    print(f" >> Saving collection data for {date} to file '{cache_fvpath}'")
+                    print(f" >> Saving collection data for {d} to file '{cache_fvpath}'")
                 else:
-                    print(f" >> No collection data found for date {date}")
+                    print(f" >> No collection data found for date {d}")
 
                 if not os.path.exists(cache_fcpath):
                     const_dsets: List[xa.Dataset] = []
                     for collection, (file_path, dvars) in const_files.items():
-                        collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, date, isconst=True, **kwargs )
+                        collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, d, isconst=True, **kwargs)
                         if collection_dset is not None: const_dsets.append( collection_dset )
                     if len( const_dsets ) > 0:
                         xa.merge(const_dsets).to_netcdf(cache_fcpath, format="NETCDF4")
@@ -228,9 +230,9 @@ class MERRA2DataProcessor:
                     else:
                         print(f" >> No constant data found")
         else:
-            print( f" ** Skipping date {date} due to existence of processed file '{cache_fvpath}'")
+            print( f" ** Skipping date {d} due to existence of processed file '{cache_fvpath}'")
 
-    def load_collection(self, collection: str, file_path: str, dvars: List[str], date: Date, **kwargs) -> Optional[xa.Dataset]:
+    def load_collection(self, collection: str, file_path: str, dvars: List[str], d: date, **kwargs) -> Optional[xa.Dataset]:
         dset: xa.Dataset = xa.open_dataset(file_path)
         isconst: bool = kwargs.pop( 'isconst', False )
         dset_attrs: Dict = dict(collection=collection, **dset.attrs, **kwargs)
@@ -240,8 +242,8 @@ class MERRA2DataProcessor:
             qtype: QType = self.get_qtype(dvar)
             mvar: xa.DataArray = self.subsample( darray, dset_attrs, qtype, isconst )
             self.stats.add_entry(dvar, mvar)
-            nodata_test( dvar, mvar, date )
-            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape} for {date}")
+            nodata_test( dvar, mvar, d)
+            print(f" ** Processing variable {dvar}{mvar.dims}: {mvar.shape} for {d}")
             mvars[dvar] = mvar
         dset.close()
         if len( mvars ) > 0:

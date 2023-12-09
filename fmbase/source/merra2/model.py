@@ -3,7 +3,8 @@ import os, numpy as np
 from typing import Any, Dict, List, Tuple, Type, Optional, Union, Sequence, Mapping
 from fmbase.util.ops import fmbdir
 from fmbase.util.ops import get_levels_config
-from fmbase.util.config import cfg, Date
+from fmbase.util.dates import drepr, dstr
+from datetime import date
 from fmbase.util.config import cfg
 
 _SEC_PER_HOUR = 3600
@@ -15,8 +16,8 @@ AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
 
-def cache_var_filepath(version: str, date: Date) -> str:
-	return f"{fmbdir('processed')}/{version}/{repr(date)}.nc"
+def cache_var_filepath(version: str, d: date) -> str:
+	return f"{fmbdir('processed')}/{version}/{drepr(d)}.nc"
 
 def cache_const_filepath(version: str) -> str:
 	return f"{fmbdir('processed')}/{version}/const.nc"
@@ -67,7 +68,7 @@ def merge_batch( slices: List[xa.Dataset], constants: xa.Dataset, task: Dict ) -
 	return xa.merge( [dynamics, constants], compat='override' )
 
 
-# def load_timestep( date: Date, task: Dict, **kwargs ) -> xa.Dataset:
+# def load_timestep( date: date, task: Dict, **kwargs ) -> xa.Dataset:
 # 	vnames = kwargs.pop('vars',None)
 # 	vlist: Dict[str, str] = task['input_variables']
 # 	constants: List[str] = task['constants']
@@ -90,16 +91,16 @@ def merge_batch( slices: List[xa.Dataset], constants: xa.Dataset, task: Dict ) -
 # 			tsdata[vname] = varray
 # 	return xa.Dataset( tsdata )
 
-def load_batch( dates: List[Date], task_config: Dict, **kwargs ) -> xa.Dataset:
-	time_slices: List[xa.Dataset] = [ load_dataset(  task_config, date=date, **kwargs ) for date in dates ]
+def load_batch( dates: List[date], task_config: Dict, **kwargs ) -> xa.Dataset:
+	time_slices: List[xa.Dataset] = [ load_dataset(  task_config, date=d, **kwargs ) for d in dates ]
 	constants: xa.Dataset = load_dataset( task_config, const=True, **kwargs )
 	return merge_batch( time_slices, constants, task_config )
 
 def load_dataset( task_config: Dict, **kwargs ):
 	version = task_config['dataset_version']
 	const = kwargs.pop( 'const', False )
-	date = kwargs.pop( 'date', None )
-	filepath =  cache_const_filepath(version)  if const else cache_var_filepath(version, date)
+	d = kwargs.pop( 'date', None )
+	filepath =  cache_const_filepath(version)  if const else cache_var_filepath(version, d)
 	dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
 	model_varname_map = {v: k for k, v in task_config['input_variables'].items() if v in dataset.data_vars}
 	model_coord_map = {k: v for k, v in task_config['coords'].items() if k in dataset.coords}
