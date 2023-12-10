@@ -96,7 +96,11 @@ class FMBatch:
 		dynamics = dynamics.drop_vars(constant_vars, errors='ignore')
 		return xa.merge( [dynamics, constants], compat='override' )
 
+	def update_cache(self, dates: List[date] ):
+		self.batch_cache = { d: self.batch_cache[d] for d in dates if d in self.batch_cache }
+
 	def load_batch( self, dates: List[date], **kwargs ) -> xa.Dataset:
+		self.update_cache( dates )
 		time_slices: List[xa.Dataset] = [ self.load_dataset( d, **kwargs ) for d in dates ]
 		return self.merge_batch( time_slices, self.constants )
 
