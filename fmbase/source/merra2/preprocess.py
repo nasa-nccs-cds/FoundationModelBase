@@ -1,16 +1,21 @@
 import xarray as xa, pandas as pd
 import numpy as np
 from fmbase.util.config import cfg
-from typing import List, Union, Tuple, Optional, Dict, Type, Any
+from typing import List, Union, Tuple, Optional, Dict, Type, Any, Sequence, Mapping
 import glob, sys, os, time, traceback
+from fmbase.util.ops import fmbdir
 from fmbase.util.dates import skw, dstr
 from datetime import date
 from xarray.core.resample import DataArrayResample
 from fmbase.util.ops import get_levels_config, increasing, replace_nans
-from fmbase.source.merra2.model import cache_var_filepath, cache_const_filepath, fmbdir, add_derived_vars
 np.set_printoptions(precision=3, suppress=False, linewidth=150)
 from enum import Enum
 
+_SEC_PER_HOUR = 3600
+_HOUR_PER_DAY = 24
+SEC_PER_DAY = _SEC_PER_HOUR * _HOUR_PER_DAY
+_AVG_DAY_PER_YEAR = 365.24219
+AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 
 def nodata_test(vname: str, varray: xa.DataArray, d: date):
@@ -199,6 +204,7 @@ class MERRA2DataProcessor:
         return dset_files, const_files
 
     def process_day(self, d: date, **kwargs):
+        from .model import cache_var_filepath, cache_const_filepath
         reprocess: bool = kwargs.pop('reprocess', False)
         cache_fvpath: str = cache_var_filepath(cfg().preprocess.version, d)
         os.makedirs(os.path.dirname(cache_fvpath), mode=0o777, exist_ok=True)
@@ -249,8 +255,40 @@ class MERRA2DataProcessor:
         if len( mvars ) > 0:
             result = xa.Dataset(mvars)
             if not isconst:
-                add_derived_vars(result)
+                self.add_derived_vars(result)
             return result
+
+    @classmethod
+    def get_year_progress(cls, seconds_since_epoch: np.ndarray) -> np.ndarray:
+        years_since_epoch = (seconds_since_epoch / SEC_PER_DAY / np.float64(_AVG_DAY_PER_YEAR))
+        yp = np.mod(years_since_epoch, 1.0).astype(np.float32)
+        return yp
+
+    @classmethod
+    def get_day_progress(cls, seconds_since_epoch: np.ndarray, longitude: np.ndarray) -> np.ndarray:
+        day_progress_greenwich = (np.mod(seconds_since_epoch, SEC_PER_DAY) / SEC_PER_DAY)
+        longitude_offsets = np.deg2rad(longitude) / (2 * np.pi)
+        day_progress = np.mod(day_progress_greenwich[..., np.newaxis] + longitude_offsets, 1.0)
+        return day_progress.astype(np.float32)
+
+    @classmethod
+    def featurize_progress(cls, name: str, dims: Sequence[str], progress: np.ndarray) -> Mapping[str, xa.Variable]:
+        if len(dims) != progress.ndim:
+            raise ValueError(f"Number of dimensions in feature {name}{dims} must be equal to the number of dimensions in progress{progress.shape}.")
+        else: print(f"featurize_progress: {name}{dims} --> progress{progress.shape} ")
+        progress_phase = progress * (2 * np.pi)
+        return {name: xa.Variable(dims, progress), name + "_sin": xa.Variable(dims, np.sin(progress_phase)), name + "_cos": xa.Variable(dims, np.cos(progress_phase))}
+    @classmethod
+    def add_derived_vars(cls, data: xa.Dataset) -> None:
+        if 'datetime' not in data.coords:
+            data.coords['datetime'] = data.coords['time'].expand_dims("batch")
+        seconds_since_epoch = (data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64))
+        batch_dim = ("batch",) if "batch" in data.dims else ()
+        year_progress = cls.get_year_progress(seconds_since_epoch)
+        data.update(cls.featurize_progress(name=cfg().preprocess.year_progress, dims=batch_dim + ("time",), progress=year_progress))
+        longitude_coord = data.coords["x"]
+        day_progress = cls.get_day_progress(seconds_since_epoch, longitude_coord.data)
+        data.update(cls.featurize_progress(name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress))
 
     @classmethod
     def get_varnames(cls, dset_file: str) -> List[str]:

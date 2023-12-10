@@ -65,39 +65,6 @@ class FMBatch:
 		stats = {model_statnames[statname]: self.load_stats( statname) for statname in StatsAccumulator.statnames}
 		return stats
 
-	@classmethod
-	def get_year_progress(cls, seconds_since_epoch: np.ndarray) -> np.ndarray:
-		years_since_epoch = ( seconds_since_epoch / SEC_PER_DAY / np.float64(_AVG_DAY_PER_YEAR) )
-		yp = np.mod(years_since_epoch, 1.0).astype(np.float32)
-		return yp
-
-	@classmethod
-	def get_day_progress(cls, seconds_since_epoch: np.ndarray, longitude: np.ndarray ) -> np.ndarray:
-		day_progress_greenwich = ( np.mod(seconds_since_epoch, SEC_PER_DAY) / SEC_PER_DAY )
-		longitude_offsets = np.deg2rad(longitude) / (2 * np.pi)
-		day_progress = np.mod( day_progress_greenwich[..., np.newaxis] + longitude_offsets, 1.0 )
-		return day_progress.astype(np.float32)
-
-	@classmethod
-	def featurize_progress(cls, name: str, dims: Sequence[str], progress: np.ndarray ) -> Mapping[str, xa.Variable]:
-		if len(dims) != progress.ndim:
-			raise ValueError( f"Number of dimensions in feature {name}{dims} must be equal to the number of dimensions in progress{progress.shape}." )
-		else: print( f"featurize_progress: {name}{dims} --> progress{progress.shape} ")
-		progress_phase = progress * (2 * np.pi)
-		return { name: xa.Variable(dims, progress), name + "_sin": xa.Variable(dims, np.sin(progress_phase)), name + "_cos": xa.Variable(dims, np.cos(progress_phase)) }
-
-	@classmethod
-	def add_derived_vars( cls, data: xa.Dataset) -> None:
-		if 'datetime' not in data.coords:
-			data.coords['datetime'] = data.coords['time'].expand_dims("batch")
-		seconds_since_epoch = ( data.coords["datetime"].data.astype("datetime64[s]").astype(np.int64) )
-		batch_dim = ("batch",) if "batch" in data.dims else ()
-		year_progress = cls.get_year_progress(seconds_since_epoch)
-		data.update( cls.featurize_progress( name=cfg().preprocess.year_progress, dims=batch_dim + ("time",), progress=year_progress ) )
-		longitude_coord = data.coords["x"]
-		day_progress = cls.get_day_progress(seconds_since_epoch, longitude_coord.data)
-		data.update( cls.featurize_progress( name=cfg().preprocess.day_progress, dims=batch_dim + ("time",) + longitude_coord.dims, progress=day_progress ) )
-
 	def merge_batch( self, slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset:
 		constant_vars: List[str] = self.task_config['constants']
 		cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
