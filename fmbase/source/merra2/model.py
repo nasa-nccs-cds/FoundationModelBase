@@ -2,7 +2,7 @@ import xarray as xa, pandas as pd
 import os, numpy as np
 from typing import Any, Dict, List, Tuple, Type, Optional, Union, Sequence, Mapping
 from fmbase.util.ops import fmbdir
-from fmbase.util.ops import get_levels_config
+from fmbase.source.merra2.preprocess import StatsAccumulator
 from fmbase.util.dates import drepr, dstr
 from datetime import date
 from fmbase.util.config import cfg
@@ -19,6 +19,8 @@ def cache_var_filepath(version: str, d: date) -> str:
 	return f"{fmbdir('processed')}/{version}/{drepr(d)}.nc"
 def cache_const_filepath(version: str) -> str:
 	return f"{fmbdir('processed')}/{version}/const.nc"
+def stats_filepath(version: str, statname: str) -> str:
+	return f"{fmbdir('processed')}/{version}/stats/{statname}.nc"
 def d2xa( dvals: Dict[str,float] ) -> xa.Dataset:
     return xa.Dataset( {vn: xa.DataArray( np.array(dval) ) for vn, dval in dvals.items()} )
 
@@ -45,8 +47,23 @@ class FMBatch:
 	def load_merra2_norm_data(cls) -> Dict[str, xa.Dataset]:
 		from fmbase.source.merra2.preprocess import load_norm_data
 		predef_norm_data: Dict[str, xa.Dataset] = cls.get_predef_norm_data()
-		m2_norm_data: Dict[str, xa.Dataset] = load_norm_data(cfg().task)
+		m2_norm_data: Dict[str, xa.Dataset] = cls.load_norm_data(cfg().task)
 		return {nnorm: xa.merge([predef_norm_data[nnorm], m2_norm_data[nnorm]]) for nnorm in m2_norm_data.keys()}
+
+	def load_stats(self, statname: str, **kwargs) -> xa.Dataset:
+		version = self.task_config['dataset_version']
+		filepath = stats_filepath(version, statname)
+		varstats: xa.Dataset = xa.open_dataset(filepath, **kwargs)
+		model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in varstats.data_vars}
+		model_coord_map = {k: v for k, v in self.task_config['coords'].items() if k in varstats.coords}
+		result: xa.Dataset = varstats.rename(**model_varname_map, **model_coord_map)
+		print(f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
+		return result
+
+	def load_norm_data(self) -> Dict[str, xa.Dataset]:  # version = cfg().task.dataset_version
+		model_statnames: Dict[str, str] = self.task_config.get('statnames')
+		stats = {model_statnames[statname]: self.load_stats( statname) for statname in StatsAccumulator.statnames}
+		return stats
 
 	@classmethod
 	def get_year_progress(cls, seconds_since_epoch: np.ndarray) -> np.ndarray:
