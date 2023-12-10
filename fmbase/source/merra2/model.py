@@ -43,11 +43,9 @@ class FMBatch:
 		vstd = dict(year_progress=0.29, year_progress_sin=0.707, year_progress_cos=0.707, day_progress=0.29, day_progress_sin=0.707, day_progress_cos=0.707)
 		return dict(diffs_stddev_by_level=d2xa(dstd), mean_by_level=d2xa(vmean), stddev_by_level=d2xa(vstd))
 
-	@classmethod
-	def load_merra2_norm_data(cls) -> Dict[str, xa.Dataset]:
-		from fmbase.source.merra2.preprocess import load_norm_data
-		predef_norm_data: Dict[str, xa.Dataset] = cls.get_predef_norm_data()
-		m2_norm_data: Dict[str, xa.Dataset] = cls.load_norm_data(cfg().task)
+	def load_merra2_norm_data(self) -> Dict[str, xa.Dataset]:
+		predef_norm_data: Dict[str, xa.Dataset] = self.get_predef_norm_data()
+		m2_norm_data: Dict[str, xa.Dataset] = self.load_norm_data()
 		return {nnorm: xa.merge([predef_norm_data[nnorm], m2_norm_data[nnorm]]) for nnorm in m2_norm_data.keys()}
 
 	def load_stats(self, statname: str, **kwargs) -> xa.Dataset:
