@@ -24,6 +24,9 @@ def stats_filepath(version: str, statname: str) -> str:
 def d2xa( dvals: Dict[str,float] ) -> xa.Dataset:
     return xa.Dataset( {vn: xa.DataArray( np.array(dval) ) for vn, dval in dvals.items()} )
 
+def clear_const_file():
+	const_filepath = cache_const_filepath(cfg().preprocess.version)
+	if os.path.exists(const_filepath): os.remove( const_filepath )
 
 class FMBatch:
 

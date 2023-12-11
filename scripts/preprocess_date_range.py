@@ -3,7 +3,7 @@ from fmbase.util.config import configure, cfg
 from typing import List, Tuple
 from datetime import date
 from fmbase.util.dates import date_range
-from fmbase.source.merra2.model import cache_const_filepath
+from fmbase.source.merra2.model import clear_const_file
 from multiprocessing import Pool, cpu_count
 import hydra, os
 
@@ -22,7 +22,7 @@ def process( d: date ) -> StatsAccumulator:
 if __name__ == '__main__':
 	dates: List[date] = date_range( start, end )
 	print( f"Multiprocessing {len(dates)} days with {nproc} procs")
-	if reprocess: os.remove( cache_const_filepath(cfg().preprocess.version) )
+	if reprocess: clear_const_file()
 	with Pool(processes=nproc) as pool:
 		proc_stats: List[StatsAccumulator] = pool.map( process, dates )
 		MERRA2DataProcessor().save_stats(proc_stats)
