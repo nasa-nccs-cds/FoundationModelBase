@@ -352,7 +352,7 @@ class MERRA2DataProcessor:
             if missing in varray.attrs:
                 missing_value = varray.attrs.pop('fmissing_value')
                 varray = varray.where( varray != missing_value, np.nan )
-        return replace_nans(varray, 'y').transpose(*self.corder, missing_dims="ignore" )
+        return replace_nans(varray).transpose(*self.corder, missing_dims="ignore" )
 
 def stats_filepath( version: str, statname: str ) -> str:
     return f"{fmbdir('processed')}/{version}/stats/{statname}.nc"
