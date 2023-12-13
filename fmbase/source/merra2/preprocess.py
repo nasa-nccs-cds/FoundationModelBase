@@ -231,7 +231,7 @@ class MERRA2DataProcessor:
                         collection_dset: xa.Dataset = self.load_collection(  collection, file_path, dvars, d, isconst=True, **kwargs)
                         if collection_dset is not None: const_dsets.append( collection_dset )
                     if len( const_dsets ) > 0:
-                        xa.merge(const_dsets).to_netcdf(cache_fcpath, format="NETCDF4")
+                        xa.merge(const_dsets).to_netcdf(cache_fcpath, format="NETCDF4", mode="w")
                         print(f" >> Saving const data to file '{cache_fcpath}'")
                     else:
                         print(f" >> No constant data found")

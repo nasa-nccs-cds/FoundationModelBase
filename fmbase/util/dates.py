@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from datetime import date, timedelta
+import random
 
 def kw(d: date) -> Dict[str,int]:
 	return dict( day=d.day, month=d.month, year=d.year )
@@ -41,5 +42,8 @@ def date_range( start: date, end: date )-> List[date]:
 		d0 = next(d0)
 	return dates
 
-def year_range( y0: int, y1: int )-> List[date]:
-	return date_range( date(y0,1,1), date(y1,1,1) )
+def year_range( y0: int, y1: int, **kwargs )-> List[date]:
+	randomize: bool = kwargs.get( 'randomize', False )
+	rlist = date_range( date(y0,1,1), date(y1,1,1) )
+	if randomize: random.shuffle(rlist)
+	return rlist
