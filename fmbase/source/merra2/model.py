@@ -90,7 +90,7 @@ class FMBatch:
 	def get_train_data(self,  day_offset: int ) -> xa.Dataset:
 		train_data: xa.Dataset = self.current_batch.isel( time=slice(day_offset, day_offset+self.batch_steps) )
 		tcoord: List = train_data.coords['time'].values.tolist()
-		print( f" train_data: shape={train_data.shape}, time range = ( {Timestamp(tcoord[0])}, {Timestamp(tcoord[-1])} )" )
+		print( f" train_data: nts={len(tcoord)}, time range = ( {Timestamp(tcoord[0])}, {Timestamp(tcoord[-1])} )" )
 		return train_data
 
 	def load_dataset( self, d: date, **kwargs ):
