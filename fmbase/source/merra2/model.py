@@ -1,11 +1,12 @@
 import xarray as xa, pandas as pd
-import os, numpy as np
+import os, math, numpy as np
 from typing import Any, Dict, List, Tuple, Type, Optional, Union, Sequence, Mapping
 from fmbase.util.ops import fmbdir
 from fmbase.source.merra2.preprocess import StatsAccumulator
-from fmbase.util.dates import drepr, dstr
+from fmbase.util.dates import drepr, date_list
 from datetime import date
 from fmbase.util.config import cfg
+from pandas import Timestamp
 
 _SEC_PER_HOUR = 3600
 _HOUR_PER_DAY = 24
@@ -31,13 +32,14 @@ def clear_const_file():
 class FMBatch:
 
 	def __init__(self, task_config: Dict, **kwargs):
-		self.batch_cache: Dict[date, xa.Dataset] = {}
 		self.task_config = task_config
 		self.constants: xa.Dataset = self.load_const_dataset( **kwargs )
 		self.norm_data: Dict[str, xa.Dataset] = self.load_merra2_norm_data()
-
-	def clear_catch(self):
-		self.batch_cache = {}
+		self.batch_steps: int = cfg().task.input_steps + cfg().task.train_steps
+		self.steps_per_day: float = 24/cfg().task.data_timestep
+		assert self.steps_per_day.is_integer(), "steps_per_day (24/data_timestep) must be an integer"
+		self.days_per_batch = 1 + math.ceil( (self.batch_steps-1)/self.steps_per_day )
+		self.current_batch: xa.Dataset = None
 
 	@classmethod
 	def get_predef_norm_data(cls) -> Dict[str, xa.Dataset]:
@@ -81,20 +83,20 @@ class FMBatch:
 		dynamics = dynamics.drop_vars(constant_vars, errors='ignore')
 		return xa.merge( [dynamics, constants], compat='override' )
 
-	def update_cache(self, dates: List[date] ):
-		self.batch_cache = { d: self.batch_cache[d] for d in dates if d in self.batch_cache }
+	def load_batch( self, d: date, **kwargs ):
+		time_slices: List[xa.Dataset] = [ self.load_dataset( d, **kwargs ) for d in date_list(d,self.days_per_batch) ]
+		self.current_batch =  self.merge_batch( time_slices, self.constants )
 
-	def load_batch( self, dates: List[date], **kwargs ) -> xa.Dataset:
-		self.update_cache( dates )
-		time_slices: List[xa.Dataset] = [ self.load_dataset( d, **kwargs ) for d in dates ]
-		return self.merge_batch( time_slices, self.constants )
+	def get_train_data(self,  day_offset: int ) -> xa.Dataset:
+		train_data: xa.Dataset = self.current_batch.isel( time=slice(day_offset, day_offset+self.batch_steps) )
+		tcoord: List = train_data.coords['time'].values.tolist()
+		print( f" train_data: shape={train_data.shape}, time range = ( {Timestamp(tcoord[0])}, {Timestamp(tcoord[-1])} )" )
+		return train_data
 
 	def load_dataset( self, d: date, **kwargs ):
 		version = self.task_config['dataset_version']
-		if d not in self.batch_cache:
-			filepath =  cache_var_filepath(version, d)
-			self.batch_cache[d] = self._open_dataset( filepath, **kwargs)
-		return self.batch_cache.get(d)
+		filepath =  cache_var_filepath(version, d)
+		return self._open_dataset( filepath, **kwargs)
 
 	def _open_dataset(self, filepath: str, **kwargs) -> xa.Dataset:
 		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
