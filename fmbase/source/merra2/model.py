@@ -7,12 +7,17 @@ from fmbase.util.dates import drepr, date_list
 from datetime import date
 from fmbase.util.config import cfg
 from pandas import Timestamp
+from enum import Enum
 
 _SEC_PER_HOUR = 3600
 _HOUR_PER_DAY = 24
 SEC_PER_DAY = _SEC_PER_HOUR * _HOUR_PER_DAY
 _AVG_DAY_PER_YEAR = 365.24219
 AVG_SEC_PER_YEAR = SEC_PER_DAY * _AVG_DAY_PER_YEAR
+
+class BatchType(Enum):
+    Training = 'Training'
+    Forecast = 'Forecast'
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
@@ -31,16 +36,25 @@ def clear_const_file():
 
 class FMBatch:
 
-	def __init__(self, task_config: Dict, **kwargs):
+	def __init__(self, task_config: Dict, btype: BatchType, **kwargs):
 		self.task_config = task_config
-		self.target_steps = kwargs.pop('target_steps', cfg().task.train_steps )
-		self.constants: xa.Dataset = self.load_const_dataset( **kwargs )
-		self.norm_data: Dict[str, xa.Dataset] = self.load_merra2_norm_data()
-		self.batch_steps: int = cfg().task.input_steps + self.target_steps
+		self.type: BatchType = btype
 		self.steps_per_day: float = 24/cfg().task.data_timestep
 		assert self.steps_per_day.is_integer(), "steps_per_day (24/data_timestep) must be an integer"
-		self.days_per_batch = 1 + math.ceil( (self.batch_steps-1)/self.steps_per_day )
+		self.target_steps = self.get_target_steps()
+		self.batch_steps: int = cfg().task.input_steps + self.target_steps
+		self.days_per_batch = self.get_days_per_batch()
+		self.constants: xa.Dataset = self.load_const_dataset( **kwargs )
+		self.norm_data: Dict[str, xa.Dataset] = self.load_merra2_norm_data()
 		self.current_batch: xa.Dataset = None
+
+	def get_target_steps(self):
+		if   self.type == BatchType.Training: return cfg().task.train_steps
+		elif self.type == BatchType.Forecast: return cfg().task.eval_steps
+
+	def get_days_per_batch(self):
+		if   self.type == BatchType.Training: return 1 + math.ceil((self.batch_steps - 1) / self.steps_per_day)
+		elif self.type == BatchType.Forecast: return math.ceil( self.batch_steps/self.steps_per_day )
 
 	@classmethod
 	def get_predef_norm_data(cls) -> Dict[str, xa.Dataset]:
