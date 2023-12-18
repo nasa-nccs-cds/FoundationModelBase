@@ -87,7 +87,9 @@ class FMBatch:
 	def load_batch( self, d: date, **kwargs ):
 		time_slices: List[xa.Dataset] = [ self.load_dataset( d, **kwargs ) for d in date_list(d,self.days_per_batch) ]
 		self.current_batch: xa.Dataset =  self.merge_batch( time_slices, self.constants )
-		print( f"Loaded batch, time= {self.current_batch.coords['time'].values.tolist()}" )
+		print( f"\n *********** Loaded batch, time= {self.current_batch.coords['time'].values.tolist()} *********** " )
+		for vn, dv in self.current_batch.data_vars.items():
+			print(f" >> {vn}{dv.dims}: {dv.shape}")
 
 	def get_train_data(self,  day_offset: int ) -> xa.Dataset:
 		return self.current_batch.isel( time=slice(day_offset, day_offset+self.batch_steps) )
