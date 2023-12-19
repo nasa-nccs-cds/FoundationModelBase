@@ -3,7 +3,6 @@ import xarray as xa
 from fmbase.util.ops import xaformat_timedeltas
 import panel.widgets as pnw
 
-
 def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
 	ds.assign_coords( time=time )
@@ -11,8 +10,6 @@ def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	x = kwargs.get( 'x', 'lon' )
 	y = kwargs.get( 'y', 'lat')
 	z = kwargs.get( 'z', 'level')
-	groupby = [ d for d in ['time',z] if d in dvar.coords ]
 	print( f"Plotting {vname}{dvar.dims}, shape = {dvar.shape}")
-
-	time = pnw.Player(name='time', start=0, end=time.size, loop_policy='loop', interval=100)
-	return dvar.interactive(loc='bottom').isel(time=time).plot(cmap='jet')     #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+	tslider = pnw.DiscreteSlider( name='time', options =time.values.tolist() )
+	return dvar.interactive(loc='bottom').sel(time=tslider).plot(cmap='jet')     #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
