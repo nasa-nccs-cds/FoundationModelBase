@@ -11,5 +11,6 @@ def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	y = kwargs.get( 'y', 'lat')
 	z = kwargs.get( 'z', 'level')
 	print( f"Plotting {vname}{dvar.dims}, shape = {dvar.shape}")
-	tslider = pnw.DiscreteSlider( name='time', options =time.values.tolist() )
-	return dvar.interactive(loc='bottom').sel(time=tslider).hvplot( cmap='jet', data_aspect=1 )    #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+#	tslider = pnw.DiscreteSlider( name='time', options =time.values.tolist() )
+	tslider = pnw.DiscreteSlider( name='time', options =list(range(time.len)) )
+	return dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 )    #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
