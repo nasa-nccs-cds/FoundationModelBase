@@ -1,7 +1,8 @@
 import hvplot.xarray  # noqa
 import xarray as xa
 from fmbase.util.ops import xaformat_timedeltas
-import panel.widgets as pnw
+import panel as pn
+
 
 def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
@@ -12,5 +13,6 @@ def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	z = kwargs.get( 'z', 'level')
 	print( f"Plotting {vname}{dvar.dims}, shape = {dvar.shape}")
 #	tslider = pnw.DiscreteSlider( name='time', options =time.values.tolist() )
-	tslider = pnw.DiscreteSlider( name='time', options =list(range(time.size)) )
-	return dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 )    #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+	tslider = pn.widgets.DiscreteSlider( name='time', options =list(range(time.size)) )
+	figure = ( dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 ) )   #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+	return pn.Column( f"# {vname}", figure ).servable()
