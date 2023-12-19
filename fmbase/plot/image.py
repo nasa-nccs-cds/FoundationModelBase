@@ -5,8 +5,8 @@ import panel.widgets as pnw
 
 
 def plot( ds: xa.Dataset, vname: str, **kwargs ):
-	time: xa.DataArray = ds.coords['time']
-	ds.assign_coords( time=xaformat_timedeltas(time) )
+	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
+	ds.assign_coords( time=time )
 	dvar: xa.DataArray = ds.data_vars[vname]
 	x = kwargs.get( 'x', 'lon' )
 	y = kwargs.get( 'y', 'lat')
