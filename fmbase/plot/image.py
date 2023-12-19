@@ -4,8 +4,15 @@ from fmbase.util.ops import xaformat_timedeltas
 import panel as pn
 import ipywidgets as ipw
 
-
 def plot( ds: xa.Dataset, vname: str, **kwargs ):
+	dvar: xa.DataArray = ds.data_vars[vname]
+	x = kwargs.get( 'x', 'lon' )
+	y = kwargs.get( 'y', 'lat')
+	z = kwargs.get( 'z', 'level')
+	groupby = [ d for d in ['time',z] if d in dvar.coords ]
+	return dvar.hvplot.image(x=x, y=y, groupby=groupby, cmap='jet')
+
+def plot1( ds: xa.Dataset, vname: str, **kwargs ):
 	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
 	ds.assign_coords( time=time )
 	dvar: xa.DataArray = ds.data_vars[vname].squeeze( dim="batch", drop=True )
