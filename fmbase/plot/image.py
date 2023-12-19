@@ -2,8 +2,8 @@ import hvplot.xarray  # noqa
 import xarray as xa
 from fmbase.util.ops import xaformat_timedeltas
 def plot( ds: xa.Dataset, vname: str, **kwargs ):
+	ds.assign_coords( time=xaformat_timedeltas(ds.coords['time']) )
 	dvar: xa.DataArray = ds.data_vars[vname]
-	dvar.coords['time'] = xaformat_timedeltas( ds.coords['time'] )
 	x = kwargs.get( 'x', 'lon' )
 	y = kwargs.get( 'y', 'lat')
 	z = kwargs.get( 'z', 'level')
