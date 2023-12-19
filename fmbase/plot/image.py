@@ -14,4 +14,4 @@ def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	groupby = [ d for d in ['time',z] if d in dvar.coords ]
 
 	time = pnw.Player(name='time', start=0, end=time.size, loop_policy='loop', interval=100)
-	return dvar.interactive(loc='bottom').isel(time=time).image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+	return dvar.interactive(loc='bottom').isel(time=time).plot(cmap='jet', title=vname)     #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
