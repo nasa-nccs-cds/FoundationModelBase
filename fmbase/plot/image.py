@@ -15,4 +15,4 @@ def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	print( f"Plotting {vname}{dvar.dims}, shape = {dvar.shape}")
 
 	time = pnw.Player(name='time', start=0, end=time.size, loop_policy='loop', interval=100)
-	return dvar.interactive(loc='bottom').isel(time=time).plot(cmap='jet', title=vname)     #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+	return dvar.interactive(loc='bottom').isel(time=time).plot(cmap='jet')     #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
