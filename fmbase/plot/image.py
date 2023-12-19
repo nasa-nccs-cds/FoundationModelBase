@@ -12,4 +12,4 @@ def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	z = kwargs.get( 'z', 'level')
 	print( f"Plotting {vname}{dvar.dims}, shape = {dvar.shape}")
 	tslider = pnw.DiscreteSlider( name='time', options =time.values.tolist() )
-	return dvar.interactive(loc='bottom').sel(time=tslider).plot(cmap='jet')     #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
+	return dvar.interactive(loc='bottom').sel(time=tslider).hvplot( cmap='jet', data_aspect=1 )    #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
