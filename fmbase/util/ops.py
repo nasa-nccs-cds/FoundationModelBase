@@ -126,9 +126,11 @@ def format_timedelta( td: np.timedelta64, form: str ) -> str:
 		return f'{hours}hr'
 	else: raise Exception( f"format_timedelta: unknown form: {form}" )
 
+def xaformat_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> xa.DataArray:
+	return xa.DataArray( [format_timedelta(td,form) for td in tds.values] )
 def format_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> str:
 	if tds is None: return " NA "
-	return str( [format_timedelta(td,form) for td in tds.values] ).replace('"','')
+	return str( xaformat_timedeltas(tds).values.tolist() ).replace('"','')
 
 def print_dict( title: str, data: Dict ):
 	print( f"\n -----> {title}:")
