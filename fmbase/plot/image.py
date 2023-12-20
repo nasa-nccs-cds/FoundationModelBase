@@ -33,7 +33,8 @@ def mplplot( fig, ds: xa.Dataset, vname: str, **kwargs):
 	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
 	ds.assign_coords( time=time )
 	dvar: xa.DataArray = ds.data_vars[vname].squeeze( dim="batch", drop=True )
-	im = plt.imshow( dvar.isel(time=0).values, cmap='jet' )
+	#im = plt.imshow( dvar.isel(time=0).values, cmap='jet', origin="upper" )
+	im =  dvar.plot.imshow(  x="lon", y="lat", cmap='jet', yincrease=False )
 
 	def update(change):
 		sindex = change['new']
