@@ -38,14 +38,16 @@ def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames:
 	print( str(type(axs)))
 	target.assign_coords( time=time )
 	forecast.assign_coords(time=time)
-	ims, dvars = {}, {}
+	ims, pvars = {}, {}
 	for iv, vname in enumerate(vnames):
-		for it, dset in enumerate( [target,forecast] ):
+		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
+		fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
+		diff: xa.DataArray = tvar - fvar
+		for it, pvar in enumerate( [tvar,fvar,diff] ):
 			ax = axs[ iv, it ]
 			ax.set_aspect(0.5)
-			dvar: xa.DataArray = dset.data_vars[vname].squeeze( dim="batch", drop=True )
-			ims[(iv,it)] =  dvar.isel(time=0).plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
-			dvars[(iv,it)] =  dvar
+			ims[(iv,it)] =  pvar.isel(time=0).plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
+			pvars[(iv,it)] =  pvar
 
 	def update(change):
 		sindex = change['new']
@@ -54,7 +56,7 @@ def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames:
 			for it1, dset1 in enumerate([target, forecast]):
 				ax1 = axs[iv1, it1]
 				ax1.set_title(tval)
-				im1, dvar1 = ims[ (iv1, it1) ], dvars[ (iv1, it1) ]
+				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
 				im1.set_data( dvar1.isel(time=sindex).values )
 				fig.canvas.draw_idle()
 
