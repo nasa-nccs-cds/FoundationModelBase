@@ -38,6 +38,7 @@ def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames:
 	print( str(type(axs)))
 	target.assign_coords( time=time )
 	forecast.assign_coords(time=time)
+	ptypes = ['target', 'forecast', 'difference']
 	ims, pvars = {}, {}
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
@@ -53,9 +54,9 @@ def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames:
 		sindex = change['new']
 		tval: str = time.values[sindex]
 		for iv1, vname1 in enumerate(vnames):
-			for it1, dset1 in enumerate([target, forecast]):
+			for it1 in range(3):
 				ax1 = axs[iv1, it1]
-				ax1.set_title(tval)
+				ax1.set_title( f"{vname1} {ptypes[it1]}: {tval}")
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
 				im1.set_data( dvar1.isel(time=sindex).values )
 				fig.canvas.draw_idle()
