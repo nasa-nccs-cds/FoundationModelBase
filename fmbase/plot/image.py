@@ -33,21 +33,30 @@ def plot1( ds: xa.Dataset, vname: str, **kwargs ):
 	#figure = ( dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 ) )   #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
 	#return pn.Column( f"# {vname}", figure ).servable()
 
-def mplplot( fig: Figure, axs, ds: xa.Dataset, vname: str, **kwargs):
-	ax: Axes = axs[0,0]
-	ax.set_aspect('equal')
-	height = kwargs.get( 'height', 4.0 )
-	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
-	ds.assign_coords( time=time )
-	dvar: xa.DataArray = ds.data_vars[vname].squeeze( dim="batch", drop=True )
-	im =  dvar.isel(time=0).plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
+def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwargs):
+	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
+	print( str(type(axs)))
+	target.assign_coords( time=time )
+	forecast.assign_coords(time=time)
+	ims, dvars = {}, {}
+	for iv, vname in enumerate(vnames):
+		for it, dset in enumerate( [target,forecast] ):
+			ax = axs[ iv, it ]
+			ax.set_aspect(0.5)
+			dvar: xa.DataArray = dset.data_vars[vname].squeeze( dim="batch", drop=True )
+			ims[(iv,it)] =  dvar.isel(time=0).plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
+			dvars[(iv,it)] =  dvar
 
 	def update(change):
 		sindex = change['new']
 		tval: str = time.values[sindex]
-		im.set_data( dvar.isel(time=sindex).values )
-		ax.set_title( tval )
-		fig.canvas.draw_idle()
+		for iv1, vname1 in enumerate(vnames):
+			for it1, dset1 in enumerate([target, forecast]):
+				ax1 = axs[iv1, it1]
+				ax1.set_title(tval)
+				im1, dvar1 = ims[ (iv1, it1) ], dvars[ (iv1, it1) ]
+				im1.set_data( dvar1.isel(time=sindex).values )
+				fig.canvas.draw_idle()
 
 	slider = ipw.IntSlider( value=0, min=0, max=time.size-1 )
 	slider.observe(update, names='value')
