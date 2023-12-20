@@ -63,4 +63,5 @@ def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames:
 
 	slider = ipw.IntSlider( value=0, min=0, max=time.size-1 )
 	slider.observe(update, names='value')
+	plt.tight_layout()
 	return ipw.VBox([slider, fig.canvas])
