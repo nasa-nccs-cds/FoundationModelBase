@@ -35,11 +35,12 @@ def plot1( ds: xa.Dataset, vname: str, **kwargs ):
 
 def mplplot( fig: Figure, axs, ds: xa.Dataset, vname: str, **kwargs):
 	ax: Axes = axs[0,0]
+	ax.set_aspect('equal')
 	height = kwargs.get( 'height', 4.0 )
 	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
 	ds.assign_coords( time=time )
 	dvar: xa.DataArray = ds.data_vars[vname].squeeze( dim="batch", drop=True )
-	im =  dvar.isel(time=0).plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True, figsize=(2*height,height) )
+	im =  dvar.isel(time=0).plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
 
 	def update(change):
 		sindex = change['new']
