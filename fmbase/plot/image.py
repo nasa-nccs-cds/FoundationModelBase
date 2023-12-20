@@ -1,6 +1,8 @@
 import hvplot.xarray  # noqa
+import numpy as np
 import xarray as xa
 from fmbase.util.ops import xaformat_timedeltas
+import matplotlib.pyplot as plt
 import panel as pn
 import ipywidgets as ipw
 
@@ -26,3 +28,18 @@ def plot1( ds: xa.Dataset, vname: str, **kwargs ):
 	return dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 )
 	#figure = ( dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 ) )   #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
 	#return pn.Column( f"# {vname}", figure ).servable()
+
+def mplplot( fig, ds: xa.Dataset, vname: str, **kwargs):
+	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
+	ds.assign_coords( time=time )
+	dvar: xa.DataArray = ds.data_vars[vname].squeeze( dim="batch", drop=True )
+	im = plt.imshow( dvar.isel(time=0).values, cmap='jet' )
+
+	def update(change):
+		sindex = change['new']
+		im.set_data( dvar.isel(time=sindex).values )
+		fig.canvas.draw_idle()
+
+	slider = ipw.IntSlider( value=0, min=0, max=time.size-1 )
+	slider.observe(update, names='value')
+	return ipw.VBox([slider, fig.canvas])
