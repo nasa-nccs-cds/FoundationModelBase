@@ -10,6 +10,12 @@ from matplotlib.figure import Figure
 import panel as pn
 import ipywidgets as ipw
 
+def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
+	meanv, stdv, minv = pvar.values.mean(), pvar.values.std(), pvar.values.min()
+	vmin = max( minv, meanv - stretch*stdv )
+	vmax = meanv + stretch*stdv
+	return vmin, vmax
+
 def plot( ds: xa.Dataset, vname: str, **kwargs ):
 	dvar: xa.DataArray = ds.data_vars[vname]
 	x = kwargs.get( 'x', 'lon' )
@@ -54,10 +60,11 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 			ax = axs[ iv, it ]
 			ax.set_aspect(0.5)
 			ax.set_title(f"{vname} {ptypes[it]}")
+			vmin, vmax = cscale( pvar, 2.0 )
 			tslice: xa.DataArray = pvar.isel(time=tslider.value)
 			if "level" in tslice.dims:
 				tslice = tslice.isel(level=lslider.value)
-			ims[(iv,it)] =  tslice.plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
+			ims[(iv,it)] =  tslice.plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True, vmin=vmin, vmax=vmax  )
 			pvars[(iv,it)] =  pvar
 
 	def time_update(change):
