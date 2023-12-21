@@ -42,7 +42,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 	ims, pvars, nvars = {}, {}, len(vnames)
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	with plt.ioff():
-		fig, axs = plt.subplots(nrows=nvars, ncols=3, sharex=True, sharey=True, figsize=[nvars*3, 15], layout="tight")
+		fig, axs = plt.subplots(nrows=nvars, ncols=3, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
 		fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
