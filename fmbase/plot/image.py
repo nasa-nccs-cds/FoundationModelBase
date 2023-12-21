@@ -33,13 +33,15 @@ def plot1( ds: xa.Dataset, vname: str, **kwargs ):
 	#figure = ( dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 ) )   #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
 	#return pn.Column( f"# {vname}", figure ).servable()
 
-def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwargs):
+def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwargs):
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
-	print( str(type(axs)))
 	target.assign_coords( time=time )
 	forecast.assign_coords(time=time)
 	ptypes = ['target', 'forecast', 'difference']
-	ims, pvars = {}, {}
+	ims, pvars, nvars = {}, {}, len(vnames)
+	plt.rcParams['figure.figsize'] = [nvars*4, 8]
+	with plt.ioff():
+		fig, axs = plt.subplots(nrows=nvars, ncols=3, sharex=True, sharey=True, figsize=[nvars*4, 8], layout="tight")
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
 		fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
@@ -63,5 +65,4 @@ def mplplot( fig: Figure, axs, target: xa.Dataset, forecast: xa.Dataset, vnames:
 
 	slider = ipw.IntSlider( value=0, min=0, max=time.size-1 )
 	slider.observe(update, names='value')
-	plt.tight_layout()
 	return ipw.VBox([slider, fig.canvas])
