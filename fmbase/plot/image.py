@@ -69,6 +69,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 
 	def time_update(change):
 		sindex = change['new']
+		print( f"time index: {sindex}" )
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
@@ -79,6 +80,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 
 	def level_update(change):
 		lindex = change['new']
+		print( f"level index: {lindex}" )
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
