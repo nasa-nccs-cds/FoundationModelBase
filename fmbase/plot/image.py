@@ -40,7 +40,10 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 	forecast.assign_coords(time=time)
 	ptypes = ['target', 'forecast', 'difference']
 	ims, pvars, nvars = {}, {}, len(vnames)
+
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
+	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
+
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=3, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
@@ -50,26 +53,33 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 		for it, pvar in enumerate( [tvar,fvar,diff] ):
 			ax = axs[ iv, it ]
 			ax.set_aspect(0.5)
-			tslice: xa.DataArray = pvar.isel(time=0)
+			ax.set_title(f"{vname} {ptypes[it]}")
+			tslice: xa.DataArray = pvar.isel(time=tslider.value)
 			if "level" in tslice.dims:
 				tslice = tslice.isel(level=lslider.value)
 			ims[(iv,it)] =  tslice.plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True )
 			pvars[(iv,it)] =  pvar
 
-	def update(change):
+	def time_update(change):
 		sindex = change['new']
-		tval: str = time.values[sindex]
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
-				ax1 = axs[iv1, it1]
-				ax1.set_title( f"{vname1} {ptypes[it1]}: {tval}")
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				tslice1: xa.DataArray =  dvar1.isel(time=sindex)
-				if "level" in tslice1.dims:
-					tslice1 = tslice1.isel(level=lslider.value)
+				skw = dict(level=lslider.value, time=sindex) if "level" in dvar1.dims else dict(time=sindex)
+				tslice1: xa.DataArray =  dvar1.isel(**skw)
 				im1.set_data( tslice1.values )
 				fig.canvas.draw_idle()
 
-	tslider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
-	tslider.observe(update, names='value')
+	def level_update(change):
+		lindex = change['new']
+		for iv1, vname1 in enumerate(vnames):
+			for it1 in range(3):
+				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
+				skw = dict(level=lindex,time=tslider.value) if "level" in dvar1.dims else dict(time=tslider.value)
+				tslice1: xa.DataArray =  dvar1.isel(**skw)
+				im1.set_data( tslice1.values )
+				fig.canvas.draw_idle()
+
+	tslider.observe( time_update,  names='value' )
+	lslider.observe( level_update, names='value' )
 	return ipw.VBox([tslider, lslider, fig.canvas])
