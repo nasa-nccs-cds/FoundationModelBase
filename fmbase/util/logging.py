@@ -69,7 +69,7 @@ class LogManager(object):
 
     def init_logging(self,**kwargs):
         from fmbase.util.config import cfg
-        self.log_dir = fmbdir( f"{cfg().platform.cache}/logs" )
+        self.log_dir =  f"{fmbdir(cfg().platform.cache)}/logs"
         os.makedirs( self.log_dir, 0o777, exist_ok=True )
         overwrite = kwargs.get("overwrite", True)
         self._lid = "" if overwrite else f"-{os.getpid()}"
