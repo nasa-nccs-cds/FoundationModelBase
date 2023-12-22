@@ -77,7 +77,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 				skw = dict(level=lslider.value, time=sindex) if "level" in dvar1.dims else dict(time=sindex)
 				tslice1: xa.DataArray =  dvar1.isel(**skw)
 				im1.set_data( tslice1.values )
-				ax1.set_title(f"{vname} {ptypes[it]}")
+				ax1.set_title(f"{vname1} {ptypes[it1]}")
 				fig.canvas.draw_idle()
 
 	def level_update(change):
@@ -89,7 +89,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 				skw = dict(level=lindex,time=tslider.value) if "level" in dvar1.dims else dict(time=tslider.value)
 				tslice1: xa.DataArray =  dvar1.isel(**skw)
 				im1.set_data( tslice1.values )
-				ax1.set_title(f"{vname} {ptypes[it]}")
+				ax1.set_title(f"{vname1} {ptypes[it1]}")
 				fig.canvas.draw_idle()
 
 	tslider.observe( time_update,  names='value' )
