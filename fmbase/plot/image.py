@@ -56,6 +56,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
 		fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
 		diff: xa.DataArray = tvar - fvar
+		print(f" Diff({vname}): dims={diff.dims}, shape={diff.shape}")
 		vrange = None
 		for it, pvar in enumerate( [tvar,fvar,diff] ):
 			ax = axs[ iv, it ]
