@@ -60,7 +60,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 	@exception_handled
 	def time_update(change):
 		sindex = change['new']
-		lgm().debug( f"time_update: tindex={sindex}, lindex={lslider.value}")
+		lgm().log( f"time_update: tindex={sindex}, lindex={lslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
 				ax1 = axs[iv1, it1]
@@ -73,7 +73,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 	@exception_handled
 	def level_update(change):
 		lindex = change['new']
-		lgm().debug( f"level_update: lindex={lindex}, tindex={tslider.value}")
+		lgm().log( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
 				ax1 = axs[iv1, it1]
