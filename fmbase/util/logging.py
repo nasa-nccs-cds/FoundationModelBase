@@ -8,8 +8,8 @@ from time import time
 from datetime import datetime
 import threading, time, logging, sys, traceback
 
-def lgm() -> "LogManager":
-    return LogManager.instance()
+def lgm(**kwargs) -> "LogManager":
+    return LogManager.instance(**kwargs)
 
 def exception_handled(func):
     def wrapper( *args, **kwargs ):
@@ -32,7 +32,8 @@ def log_timing(f):
             lgm().exception( f" Error in {f}:" )
     return wrap
 
-class LogManager(FMSingleton):
+class LogManager(object):
+    _instance: "LogManager" = None
 
     def __init__(self):
         super(LogManager, self).__init__()
@@ -44,7 +45,14 @@ class LogManager(FMSingleton):
         self._keras_logger = None
         self.log_dir = None
         self.log_file  = None
-        self.init_logging()
+
+    @classmethod
+    def instance(cls,**kwargs) -> "LogManager":
+        if cls._instance is None:
+            logger = LogManager()
+            logger.init_logging(**kwargs)
+            cls._instance = logger
+        return cls._instance
 
     def close(self):
         if self._log_stream  is not None:
@@ -59,11 +67,11 @@ class LogManager(FMSingleton):
     def set_level(self, level ):
         self._level = level
 
-    def init_logging(self):
+    def init_logging(self,**kwargs):
         from fmbase.util.config import cfg
         self.log_dir = f"{cfg().platform.cache}/logs"
         os.makedirs( self.log_dir, 0o777, exist_ok=True )
-        overwrite = False
+        overwrite = kwargs.get("overwrite", True)
         self._lid = "" if overwrite else f"-{os.getpid()}"
         self.log_file = f'{self.log_dir}/main{self._lid}.log'
         self._log_stream = open(self.log_file, 'w')
