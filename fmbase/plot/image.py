@@ -68,7 +68,8 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 				tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				fig.canvas.draw_idle()
+				lgm().log(f" >> Time-update {vname1} {ptypes[it1]}: level={lslider.value}, time={sindex}, shape={tslice1.shape}")
+		fig.canvas.draw_idle()
 
 	@exception_handled
 	def level_update(change):
@@ -81,7 +82,8 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				fig.canvas.draw_idle()
+				lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tslider.value}, shape={tslice1.shape}")
+		fig.canvas.draw_idle()
 
 	tslider.observe( time_update,  names='value' )
 	lslider.observe( level_update, names='value' )

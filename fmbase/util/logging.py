@@ -68,11 +68,12 @@ class LogManager(object):
 
     def init_logging(self,**kwargs):
         from fmbase.util.ops import fmbdir
+        from fmbase.util.config import cfg
         self.log_dir =  f"{fmbdir('cache')}/logs"
         os.makedirs( self.log_dir, 0o777, exist_ok=True )
         overwrite = kwargs.get("overwrite", True)
         self._lid = "" if overwrite else f"-{os.getpid()}"
-        self.log_file = f'{self.log_dir}/main{self._lid}.log'
+        self.log_file = f'{self.log_dir}/{cfg().cid}{self._lid}.log'
         self._log_stream = open(self.log_file, 'w')
         print( f"Opening log file:  '{self.log_file}'" )
 
