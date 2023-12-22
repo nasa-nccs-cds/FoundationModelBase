@@ -1,7 +1,6 @@
 import numpy as np
 from typing import List, Optional, Dict, Type
 import os, datetime
-from fmbase.util.ops import fmbdir
 from enum import Enum
 from functools import wraps
 from time import time
@@ -68,8 +67,8 @@ class LogManager(object):
         self._level = level
 
     def init_logging(self,**kwargs):
-        from fmbase.util.config import cfg
-        self.log_dir =  f"{fmbdir(cfg().platform.cache)}/logs"
+        from fmbase.util.ops import fmbdir
+        self.log_dir =  f"{fmbdir('cache')}/logs"
         os.makedirs( self.log_dir, 0o777, exist_ok=True )
         overwrite = kwargs.get("overwrite", True)
         self._lid = "" if overwrite else f"-{os.getpid()}"
