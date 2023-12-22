@@ -82,7 +82,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tslider.value}, shape={tslice1.shape}")
+				lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tslider.value}, mean={tslice1.values.mean():.4f}, std={tslice1.values.std():.4f}")
 		fig.canvas.draw_idle()
 
 	tslider.observe( time_update,  names='value' )
