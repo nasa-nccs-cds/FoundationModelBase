@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List, Optional, Dict, Type
 import os, datetime
+from fmbase.util.base import FMSingleton
 from enum import Enum
 from functools import wraps
 from time import time
@@ -31,7 +32,7 @@ def log_timing(f):
             lgm().exception( f" Error in {f}:" )
     return wrap
 
-class LogManager(SingletonConfigurable):
+class LogManager(FMSingleton):
 
     def __init__(self):
         super(LogManager, self).__init__()
@@ -43,6 +44,7 @@ class LogManager(SingletonConfigurable):
         self._keras_logger = None
         self.log_dir = None
         self.log_file  = None
+        self.init_logging()
 
     def close(self):
         if self._log_stream  is not None:
@@ -54,13 +56,14 @@ class LogManager(SingletonConfigurable):
     def pid(cls):
         return os.getpid()
 
-    def setLevel(self, level ):
+    def set_level(self, level ):
         self._level = level
 
-    def init_logging(self, log_dir: str, **kwargs ):
-        self.log_dir = log_dir
+    def init_logging(self):
+        from fmbase.util.config import cfg
+        self.log_dir = f"{cfg().platform.cache}/logs"
         os.makedirs( self.log_dir, 0o777, exist_ok=True )
-        overwrite = kwargs.get( 'overwrite', True )
+        overwrite = False
         self._lid = "" if overwrite else f"-{os.getpid()}"
         self.log_file = f'{self.log_dir}/main{self._lid}.log'
         self._log_stream = open(self.log_file, 'w')

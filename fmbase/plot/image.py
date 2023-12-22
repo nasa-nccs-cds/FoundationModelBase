@@ -9,6 +9,15 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import panel as pn
 import ipywidgets as ipw
+from fmbase.util.logging import lgm, exception_handled, log_timing
+
+def rms( dvar: xa.DataArray, **kwargs ) -> float:
+	varray: np.ndarray = dvar.isel( **kwargs, missing_dims="ignore", drop=True ).values
+	return np.sqrt( np.mean( np.square( varray ) ) )
+
+def rmse( diff: xa.DataArray, **kw ) -> xa.DataArray:
+	rms_error = np.array( [ rms(diff, time=iT, **kw) for iT in range(diff.shape[0]) ] )
+	return xa.DataArray( rms_error, dims=['time'], coords={'time': diff.time} )
 
 def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	meanv, stdv, minv = pvar.values.mean(), pvar.values.std(), pvar.values.min()
@@ -16,29 +25,7 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	vmax = meanv + stretch*stdv
 	return vmin, vmax
 
-def plot( ds: xa.Dataset, vname: str, **kwargs ):
-	dvar: xa.DataArray = ds.data_vars[vname]
-	x = kwargs.get( 'x', 'lon' )
-	y = kwargs.get( 'y', 'lat')
-	z = kwargs.get( 'z', 'level')
-	groupby = [ d for d in ['time',z] if d in dvar.coords ]
-	return dvar.hvplot.image(x=x, y=y, groupby=groupby, cmap='jet')
-
-def plot1( ds: xa.Dataset, vname: str, **kwargs ):
-	time: xa.DataArray = xaformat_timedeltas( ds.coords['time'] )
-	ds.assign_coords( time=time )
-	dvar: xa.DataArray = ds.data_vars[vname].squeeze( dim="batch", drop=True )
-	x = kwargs.get( 'x', 'lon' )
-	y = kwargs.get( 'y', 'lat')
-	z = kwargs.get( 'z', 'level')
-	print( f"Plotting {vname}{dvar.dims}, shape = {dvar.shape}")
-#	tslider = pnw.DiscreteSlider( name='time', options =time.values.tolist() )
-#	tslider = pn.widgets.DiscreteSlider( name='time', options =list(range(time.size)) )
-	tslider = ipw.IntSlider(description='time', min=0, max=time.size-1)
-	return dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 )
-	#figure = ( dvar.interactive(loc='bottom').isel(time=tslider).hvplot( cmap='jet', x="lon", y="lat", data_aspect=1 ) )   #.image( x=x, y=y, groupby=groupby, cmap='jet', title=vname )
-	#return pn.Column( f"# {vname}", figure ).servable()
-
+@exception_handled
 def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwargs):
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
@@ -56,6 +43,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
 		fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
 		diff: xa.DataArray = tvar - fvar
+		rmserror: xa.DataArray = rmse(diff)
 		print(f" Diff({vname}): dims={diff.dims}, shape={diff.shape}")
 		vrange = None
 		for it, pvar in enumerate( [tvar,fvar,diff] ):
@@ -69,26 +57,28 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 			pvars[(iv,it)] =  pvar
 			ax.set_title(f"{vname} {ptypes[it]}")
 
+	@exception_handled
 	def time_update(change):
 		sindex = change['new']
+		lgm().debug( f"time_update: tindex={sindex}, lindex={lslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
 				ax1 = axs[iv1, it1]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				skw = dict(level=lslider.value, time=sindex) if "level" in dvar1.dims else dict(time=sindex)
-				tslice1: xa.DataArray =  dvar1.isel(**skw)
+				tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
 				fig.canvas.draw_idle()
 
+	@exception_handled
 	def level_update(change):
 		lindex = change['new']
+		lgm().debug( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(3):
 				ax1 = axs[iv1, it1]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				skw = dict(level=lindex,time=tslider.value) if "level" in dvar1.dims else dict(time=tslider.value)
-				tslice1: xa.DataArray =  dvar1.isel(**skw)
+				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
 				fig.canvas.draw_idle()
