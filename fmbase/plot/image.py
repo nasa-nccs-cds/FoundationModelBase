@@ -72,7 +72,7 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 		lgm().log( f"time_update: tindex={sindex}, lindex={lslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
-				ax1 = axs[iv1, it1]
+				ax1 = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
 				tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
@@ -86,7 +86,7 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 		lgm().log( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
-				ax1 = axs[iv1, it1]
+				ax1 = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
 				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
