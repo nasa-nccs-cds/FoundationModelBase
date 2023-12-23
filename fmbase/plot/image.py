@@ -90,4 +90,5 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 
 	tslider.observe( time_update,  names='value' )
 	lslider.observe( level_update, names='value' )
+	print( "Generated Plot")
 	return ipw.VBox([tslider, lslider, fig.canvas])
