@@ -26,27 +26,30 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	return vmin, vmax
 
 @exception_handled
-def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwargs):
+def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None ):
+	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
 	target.assign_coords( time=time )
-	forecast.assign_coords(time=time)
-	ptypes = ['target', 'forecast', 'difference']
-	ims, pvars, nvars = {}, {}, len(vnames)
-
+	if forecast is not None:
+		forecast.assign_coords(time=time)
+		ptypes = ['target', 'forecast', 'difference']
+	ncols =  len( ptypes )
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
 
 	with plt.ioff():
-		fig, axs = plt.subplots(nrows=nvars, ncols=3, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
+		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
-		fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
-		diff: xa.DataArray = tvar - fvar
-		rmserror: xa.DataArray = rmse(diff)
-		print(f" Diff({vname}): dims={diff.dims}, shape={diff.shape}")
+		plotvars = [ tvar ]
+		if forecast is not None:
+			fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
+			diff: xa.DataArray = tvar - fvar
+			rmserror: xa.DataArray = rmse(diff)
+			plotvars = plotvars + [ fvar, diff ]
 		vrange = None
-		for it, pvar in enumerate( [tvar,fvar,diff] ):
+		for it, pvar in enumerate( plotvars ):
 			ax = axs[ iv, it ]
 			ax.set_aspect(0.5)
 			if it != 1: vrange = cscale( pvar, 2.0 )
@@ -62,7 +65,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 		sindex = change['new']
 		lgm().log( f"time_update: tindex={sindex}, lindex={lslider.value}")
 		for iv1, vname1 in enumerate(vnames):
-			for it1 in range(3):
+			for it1 in range(ncols):
 				ax1 = axs[iv1, it1]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
 				tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
@@ -76,7 +79,7 @@ def mplplot( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], **kwar
 		lindex = change['new']
 		lgm().log( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
-			for it1 in range(3):
+			for it1 in range(ncols):
 				ax1 = axs[iv1, it1]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
 				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
