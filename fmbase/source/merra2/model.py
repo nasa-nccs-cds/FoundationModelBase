@@ -78,10 +78,9 @@ class FMBatch:
 		print(f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
 		return result
 
-	def load_norm_data(self) -> Dict[str, xa.Dataset]:  # version = cfg().task.dataset_version
-		model_statnames: Dict[str, str] = self.task_config.get('statnames')
-		stats = {model_statnames[statname]: self.load_stats( statname) for statname in StatsAccumulator.statnames if statname in model_statnames}
-		return stats
+	def load_norm_data(self) -> Dict[str, xa.Dataset]:
+		snames: Dict[str, str] = self.task_config.get('statnames')
+		return {} if snames is None else {snames[sname]: self.load_stats(sname) for sname in StatsAccumulator.statnames}
 
 	def merge_batch( self, slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset:
 		constant_vars: List[str] = self.task_config['constants']
