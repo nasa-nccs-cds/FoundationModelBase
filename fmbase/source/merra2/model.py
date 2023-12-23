@@ -39,10 +39,10 @@ class FMBatch:
 	def __init__(self, task_config: Dict, btype: BatchType, **kwargs):
 		self.task_config = task_config
 		self.type: BatchType = btype
-		self.steps_per_day: float = 24/cfg().task.data_timestep
+		self.steps_per_day: float = 24/task_config['data_timestep']
 		assert self.steps_per_day.is_integer(), "steps_per_day (24/data_timestep) must be an integer"
 		self.target_steps = self.get_target_steps()
-		self.batch_steps: int = cfg().task.input_steps + self.target_steps
+		self.batch_steps: int = task_config['input_steps'] + self.target_steps
 		self.days_per_batch = self.get_days_per_batch()
 		self.constants: xa.Dataset = self.load_const_dataset( **kwargs )
 		self.norm_data: Dict[str, xa.Dataset] = self.load_merra2_norm_data()
