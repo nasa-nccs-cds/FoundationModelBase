@@ -149,7 +149,7 @@ class MERRA2DataProcessor:
         self.xext, self.yext = cfg().preprocess.get('xext'), cfg().preprocess.get('yext')
         self.xres, self.yres = cfg().preprocess.get('xres'), cfg().preprocess.get('yres')
         self.levels: Optional[np.ndarray] = get_levels_config( cfg().preprocess )
-        self.tstep = cfg().preprocess.tstep
+        self.tstep = str(cfg().preprocess.data_timestep) + "H"
         self.month_range = cfg().preprocess.get('month_range',[0,12,1])
         self.vars: Dict[str, List[str]] = cfg().preprocess.vars
         self.dmap: Dict = cfg().preprocess.dims
