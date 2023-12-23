@@ -80,7 +80,7 @@ class FMBatch:
 
 	def load_norm_data(self) -> Dict[str, xa.Dataset]:  # version = cfg().task.dataset_version
 		model_statnames: Dict[str, str] = self.task_config.get('statnames')
-		stats = {model_statnames[statname]: self.load_stats( statname) for statname in StatsAccumulator.statnames}
+		stats = {model_statnames[statname]: self.load_stats( statname) for statname in StatsAccumulator.statnames if statname in model_statnames}
 		return stats
 
 	def merge_batch( self, slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset:
