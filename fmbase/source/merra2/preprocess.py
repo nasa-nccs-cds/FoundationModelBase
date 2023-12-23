@@ -3,6 +3,7 @@ import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type, Any, Sequence, Mapping
 import glob, sys, os, time, traceback
+from fmbase.source.merra2.model import stats_filepath
 from fmbase.util.ops import fmbdir
 from fmbase.util.dates import skw, dstr
 from datetime import date
@@ -354,19 +355,3 @@ class MERRA2DataProcessor:
                 varray = varray.where( varray != missing_value, np.nan )
         return replace_nans(varray).transpose(*self.corder, missing_dims="ignore" )
 
-def stats_filepath( version: str, statname: str ) -> str:
-    return f"{fmbdir('processed')}/{version}/stats/{statname}.nc"
-
-def load_stats( task_config: Dict , statname: str, **kwargs ) -> xa.Dataset:
-    version = task_config['dataset_version']
-    filepath = stats_filepath(version,statname)
-    varstats: xa.Dataset = xa.open_dataset(filepath,**kwargs)
-    model_varname_map = { v: k for k, v in task_config['input_variables'].items() if v in varstats.data_vars }
-    model_coord_map   = { k: v for k, v in task_config['coords'].items() if k in varstats.coords }
-    result: xa.Dataset = varstats.rename( **model_varname_map, **model_coord_map )
-    print( f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
-    return result
-def load_norm_data( task_config: Dict ) -> Dict[str,xa.Dataset]:     #     version = cfg().task.dataset_version
-    model_statnames: Dict[str,str] = task_config.get( 'statnames' )
-    stats = { model_statnames[statname]: load_stats(task_config,statname) for statname in StatsAccumulator.statnames }
-    return stats
