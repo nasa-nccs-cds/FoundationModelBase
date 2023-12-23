@@ -49,8 +49,8 @@ class FMBatch:
 		self.current_batch: xa.Dataset = None
 
 	def get_target_steps(self):
-		if   self.type == BatchType.Training: return cfg().task.train_steps
-		elif self.type == BatchType.Forecast: return cfg().task.eval_steps
+		if   self.type == BatchType.Training: return self.task_config['train_steps']
+		elif self.type == BatchType.Forecast: return self.task_config['eval_steps']
 
 	def get_days_per_batch(self):
 		if   self.type == BatchType.Training: return 1 + math.ceil((self.batch_steps - 1) / self.steps_per_day)
