@@ -1,4 +1,4 @@
-version:    'merra2.findtuning'
+dataset_version:    'merra2.findtuning'
 year_range: [1984,2022]
 data_timestep: 6
 xres: 1.0
