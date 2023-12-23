@@ -72,10 +72,6 @@ class FMBatch:
 		version = self.task_config['dataset_version']
 		filepath = stats_filepath(version, statname)
 		varstats: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-#		model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in varstats.data_vars}
-#		model_coord_map = {k: v for k, v in self.task_config['coords'].items() if k in varstats.coords}
-#		result: xa.Dataset = varstats.rename(**model_varname_map, **model_coord_map)
-#		print(f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
 		return self.rename_vars( varstats )
 
 	def load_norm_data(self) -> Dict[str, xa.Dataset]:
