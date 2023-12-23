@@ -5,6 +5,7 @@ xres: 1.0
 yres: 1.0
 levels:  [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
 dims: { lon: x, lat: y, lev: z }
+coords: { x: "lon", y: "lat", z: "level" }
 vars: { inst3_3d_asm_Np: ['T', 'U', 'V', 'OMEGA', 'H', 'QV', 'PHIS' ],
         inst1_2d_asm_Nx: ['SLP', 'T2M', 'V10M', 'U10M', 'TQI', 'TQL', 'TQV'],
         const_2d_ctm_Nx: [ 'PHIS', 'FRACI', 'FRLAKE', 'FRLAND', 'FRLANDICE', 'FROCEAN'],
