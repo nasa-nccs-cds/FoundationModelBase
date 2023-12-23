@@ -62,7 +62,6 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 			pvars[(iv,it)] =  pvar
 			ax.set_title(f"{vname} {ptypes[it]}")
 
-	print( "mplplot-2")
 	@exception_handled
 	def time_update(change):
 		sindex = change['new']
