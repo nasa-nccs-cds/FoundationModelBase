@@ -13,7 +13,6 @@ vars: { inst3_3d_asm_Np: ['T', 'U', 'V', 'OMEGA', 'H', 'QV', 'PHIS' ],
 extensive: [ 'PRECLS' ]
 day_progress: "day_progress"
 year_progress: "year_progress"
-statnames: { mean: "mean_by_level", std: "stddev_by_level", mean_diff: "diffs_mean_by_level", std_diff: "diffs_stddev_by_level" }
 
 input_steps: 2
 train_steps: 2
