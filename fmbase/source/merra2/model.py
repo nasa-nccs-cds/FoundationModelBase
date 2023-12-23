@@ -72,11 +72,11 @@ class FMBatch:
 		version = self.task_config['dataset_version']
 		filepath = stats_filepath(version, statname)
 		varstats: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-		model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in varstats.data_vars}
-		model_coord_map = {k: v for k, v in self.task_config['coords'].items() if k in varstats.coords}
-		result: xa.Dataset = varstats.rename(**model_varname_map, **model_coord_map)
-		print(f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
-		return result
+#		model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in varstats.data_vars}
+#		model_coord_map = {k: v for k, v in self.task_config['coords'].items() if k in varstats.coords}
+#		result: xa.Dataset = varstats.rename(**model_varname_map, **model_coord_map)
+#		print(f"\nLoad stats({statname}): vars = {list(result.data_vars.keys())}")
+		return self.rename_vars( varstats )
 
 	def load_norm_data(self) -> Dict[str, xa.Dataset]:
 		snames: Dict[str, str] = self.task_config.get('statnames')
@@ -116,6 +116,9 @@ class FMBatch:
 
 	def _open_dataset(self, filepath: str, **kwargs) -> xa.Dataset:
 		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
+		return self.rename_vars(dataset)
+
+	def rename_vars( self, dataset: xa.Dataset ) -> xa.Dataset:
 		model_varname_map, model_coord_map = {}, {}
 		if 'input_variables' in self.task_config:
 			model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in dataset.data_vars}
