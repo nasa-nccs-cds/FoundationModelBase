@@ -117,8 +117,11 @@ class FMBatch:
 
 	def _open_dataset(self, filepath: str, **kwargs) -> xa.Dataset:
 		dataset: xa.Dataset = xa.open_dataset(filepath, **kwargs)
-		model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in dataset.data_vars}
-		model_coord_map = {k: v for k, v in self.task_config['coords'].items() if k in dataset.coords}
+		model_varname_map, model_coord_map = {}, {}
+		if 'input_variables' in self.task_config:
+			model_varname_map = {v: k for k, v in self.task_config['input_variables'].items() if v in dataset.data_vars}
+		if 'coords' in self.task_config:
+			model_coord_map = {k: v for k, v in self.task_config['coords'].items() if k in dataset.coords}
 		return dataset.rename(**model_varname_map, **model_coord_map)
 
 	def load_const_dataset( self, **kwargs ):
