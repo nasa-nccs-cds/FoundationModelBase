@@ -27,7 +27,6 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 
 @exception_handled
 def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None ):
-	print( "Generating Plot")
 	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
@@ -38,12 +37,10 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 	ncols =  len( ptypes )
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
-	print( "mplplot-1")
 
 	with plt.ioff():
-		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
+		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
-		print(f" >> {vname}")
 		tvar: xa.DataArray = target.data_vars[vname]
 		if "batch" in tvar.dims:
 			tvar = tvar.squeeze(dim="batch", drop=True)
@@ -96,5 +93,4 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 
 	tslider.observe( time_update,  names='value' )
 	lslider.observe( level_update, names='value' )
-	print( "Generated Plot")
 	return ipw.VBox([tslider, lslider, fig.canvas])
