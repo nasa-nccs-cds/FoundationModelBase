@@ -83,7 +83,7 @@ class FMBatch:
 		return {} if snames is None else {snames[sname]: self.load_stats(sname) for sname in StatsAccumulator.statnames}
 
 	def merge_batch( self, slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset:
-		constant_vars: List[str] = self.task_config['constants']
+		constant_vars: List[str] = self.task_config.get('constants',[])
 		cvars = [vname for vname, vdata in slices[0].data_vars.items() if "time" not in vdata.dims]
 		dynamics: xa.Dataset = xa.concat( slices, dim="time", coords = "minimal" )
 		dynamics = dynamics.drop_vars(cvars)
