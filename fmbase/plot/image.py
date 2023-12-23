@@ -27,6 +27,7 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 
 @exception_handled
 def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None ):
+	print( "Generating Plot")
 	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
@@ -37,10 +38,12 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 	ncols =  len( ptypes )
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
+	print( "mplplot-1")
 
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
+		print(f" >> {vname}")
 		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
 		plotvars = [ tvar ]
 		if forecast is not None:
@@ -60,6 +63,7 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 			pvars[(iv,it)] =  pvar
 			ax.set_title(f"{vname} {ptypes[it]}")
 
+	print( "mplplot-2")
 	@exception_handled
 	def time_update(change):
 		sindex = change['new']
