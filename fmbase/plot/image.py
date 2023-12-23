@@ -55,7 +55,7 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 			plotvars = plotvars + [ fvar, diff ]
 		vrange = None
 		for it, pvar in enumerate( plotvars ):
-			ax = axs[ iv, it ]
+			ax = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 			ax.set_aspect(0.5)
 			if it != 1: vrange = cscale( pvar, 2.0 )
 			tslice: xa.DataArray = pvar.isel(time=tslider.value)
