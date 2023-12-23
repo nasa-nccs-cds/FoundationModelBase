@@ -44,7 +44,9 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[15, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
 		print(f" >> {vname}")
-		tvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
+		tvar: xa.DataArray = target.data_vars[vname]
+		if "batch" in tvar.dims:
+			tvar = tvar.squeeze(dim="batch", drop=True)
 		plotvars = [ tvar ]
 		if forecast is not None:
 			fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
