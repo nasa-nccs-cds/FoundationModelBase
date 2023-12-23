@@ -3,7 +3,6 @@ import numpy as np
 from fmbase.util.config import cfg
 from typing import List, Union, Tuple, Optional, Dict, Type, Any, Sequence, Mapping
 import glob, sys, os, time, traceback
-from fmbase.source.merra2.model import stats_filepath
 from fmbase.util.ops import fmbdir
 from fmbase.util.dates import skw, dstr
 from datetime import date
@@ -171,6 +170,7 @@ class MERRA2DataProcessor:
                 entry.merge( new_entry )
 
     def save_stats(self, ext_stats: List[StatsAccumulator]=None ):
+        from fmbase.source.merra2.model import stats_filepath
         self.merge_stats( ext_stats )
         for statname in self.stats.statnames:
             filepath = stats_filepath( cfg().preprocess.version, statname )
