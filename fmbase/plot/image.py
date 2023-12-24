@@ -1,7 +1,7 @@
 import hvplot.xarray  # noqa
 import numpy as np
 import xarray as xa
-from typing  import List, Tuple, Union
+from typing  import List, Tuple, Union, Optional, Dict
 from fmbase.util.ops import xaformat_timedeltas
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -25,9 +25,17 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	vmax = meanv + stretch*stdv
 	return vmin, vmax
 
+def normalize( target: xa.Dataset, vname: str, norms: Dict[str,xa.Dataset] ) -> xa.DataArray:
+	fvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
+	if len(norms) == 0: return fvar
+	stats: Dict[str,xa.DataArray] = { stat: statdata.data_vars[vname] for stat,statdata in norms.items()}
+	return (fvar - stats['mean'])/stats['std']
+
 @exception_handled
-def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None ):
+def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
+	forecast: Optional[xa.Dataset] = kwargs.get('forecast',None)
+	norms: Dict[str,xa.Dataset] = kwargs.get('norms', {})
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
 	target.assign_coords( time=time )
@@ -41,12 +49,12 @@ def mplplot( target: xa.Dataset, vnames: List[str], forecast: xa.Dataset = None 
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
-		tvar: xa.DataArray = target.data_vars[vname]
+		tvar: xa.DataArray = normalize(target,vname,norms)
 		if "batch" in tvar.dims:
 			tvar = tvar.squeeze(dim="batch", drop=True)
 		plotvars = [ tvar ]
 		if forecast is not None:
-			fvar: xa.DataArray = forecast.data_vars[vname].squeeze(dim="batch", drop=True)
+			fvar: xa.DataArray = normalize(forecast,vname,norms)
 			diff: xa.DataArray = tvar - fvar
 			rmserror: xa.DataArray = rmse(diff)
 			plotvars = plotvars + [ fvar, diff ]
