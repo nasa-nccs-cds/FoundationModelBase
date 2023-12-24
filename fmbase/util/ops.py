@@ -75,6 +75,9 @@ def print_data_column( target: xa.Dataset, vname: str, **kwargs):
 	tdata = ttest_array.isel(**iargs).squeeze().values.tolist()
 	print(f" ** {ptype} data column=> {vname}{ttest_array.dims}{ttest_array.shape}: {format_float_list(tdata)}")
 
+def vars3d( target: xa.Dataset ) -> List[str]:
+	return [ name for name,dvar in target.data_vars.items() if "level" in dvar.dims ]
+
 def is_float( string: str ) -> bool:
 	try: float(string); return True
 	except ValueError:  return False
