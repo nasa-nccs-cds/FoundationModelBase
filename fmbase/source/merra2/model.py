@@ -56,12 +56,14 @@ class FMBatch:
 		if   self.type == BatchType.Training: return 1 + math.ceil((self.batch_steps - 1) / self.steps_per_day)
 		elif self.type == BatchType.Forecast: return math.ceil( self.batch_steps/self.steps_per_day )
 
-	@classmethod
-	def get_predef_norm_data(cls) -> Dict[str, xa.Dataset]:
+	def get_predef_norm_data(self) -> Dict[str, xa.Dataset]:
+		sndef = { sn:sn for sn in StatsAccumulator.statnames }
+		snames: Dict[str, str] = self.task_config.get('statnames',sndef)
 		dstd = dict(year_progress=0.0247, year_progress_sin=0.003, year_progress_cos=0.003, day_progress=0.433, day_progress_sin=1.0, day_progress_cos=1.0)
 		vmean = dict(year_progress=0.5, year_progress_sin=0.0, year_progress_cos=0.0, day_progress=0.5, day_progress_sin=0.0, day_progress_cos=0.0)
 		vstd = dict(year_progress=0.29, year_progress_sin=0.707, year_progress_cos=0.707, day_progress=0.29, day_progress_sin=0.707, day_progress_cos=0.707)
-		return dict(std_diff=d2xa(dstd), mean=d2xa(vmean), std=d2xa(vstd))
+		pdstats = dict(std_diff=d2xa(dstd), mean=d2xa(vmean), std=d2xa(vstd))
+		return {snames[sname]: pdstats[sname] for sname in sndef.keys()}
 
 	def load_merra2_norm_data(self) -> Dict[str, xa.Dataset]:
 		predef_norm_data: Dict[str, xa.Dataset] = self.get_predef_norm_data()
