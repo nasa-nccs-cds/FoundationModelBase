@@ -25,12 +25,13 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	vmax = meanv + stretch*stdv
 	return vmin, vmax
 
-def normalize( target: xa.Dataset, vname: str, norms: Dict[str,xa.Dataset] ) -> xa.DataArray:
+def normalize( target: xa.Dataset, vname: str, norms: Dict[str,xa.Dataset], **kwargs ) -> xa.DataArray:
+	statnames: Dict[str,str] = kwargs.get('statnames', dict(mean='mean', std='std'))
 	fvar: xa.DataArray = target.data_vars[vname]
 	if 'batch' in fvar.dims:  fvar = fvar.squeeze(dim="batch", drop=True)
 	if len(norms) == 0: return fvar
 	stats: Dict[str,xa.DataArray] = { stat: statdata.data_vars[vname] for stat,statdata in norms.items()}
-	return (fvar - stats['mean'])/stats['std']
+	return (fvar-stats[ statnames['mean'] ]) / stats[ statnames['std'] ]
 
 @exception_handled
 def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
@@ -50,14 +51,14 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
-		tvar: xa.DataArray = normalize(target,vname,norms)
+		tvar: xa.DataArray = normalize(target,vname,norms,**kwargs)
 		if "batch" in tvar.dims:
 			tvar = tvar.squeeze(dim="batch", drop=True)
 		plotvars = [ tvar ]
 		if forecast is not None:
 			fvar: xa.DataArray = normalize(forecast,vname,norms)
 			diff: xa.DataArray = tvar - fvar
-			rmserror: xa.DataArray = rmse(diff)
+		#	rmserror: xa.DataArray = rmse(diff)
 			plotvars = plotvars + [ fvar, diff ]
 		vrange = None
 		for it, pvar in enumerate( plotvars ):
