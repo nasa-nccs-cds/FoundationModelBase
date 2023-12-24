@@ -25,8 +25,9 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	vmax = meanv + stretch*stdv
 	return vmin, vmax
 
-def normalize( target: xa.Dataset, vname: str, norms: Dict[str,xa.Dataset], **kwargs ) -> xa.DataArray:
+def normalize( target: xa.Dataset, vname: str, **kwargs ) -> xa.DataArray:
 	statnames: Dict[str,str] = kwargs.get('statnames', dict(mean='mean', std='std'))
+	norms: Dict[str,xa.Dataset] = kwargs.pop( 'norms', {} )
 	fvar: xa.DataArray = target.data_vars[vname]
 	if 'batch' in fvar.dims:  fvar = fvar.squeeze(dim="batch", drop=True)
 	if len(norms) == 0: return fvar
@@ -36,8 +37,7 @@ def normalize( target: xa.Dataset, vname: str, norms: Dict[str,xa.Dataset], **kw
 @exception_handled
 def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
-	forecast: Optional[xa.Dataset] = kwargs.get('forecast',None)
-	norms: Dict[str,xa.Dataset] = kwargs.get('norms', {})
+	forecast: Optional[xa.Dataset] = kwargs.pop('forecast',None)
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
 	target.assign_coords( time=time )
@@ -51,12 +51,12 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
-		tvar: xa.DataArray = normalize(target,vname,norms,**kwargs)
+		tvar: xa.DataArray = normalize(target,vname,**kwargs)
 		if "batch" in tvar.dims:
 			tvar = tvar.squeeze(dim="batch", drop=True)
 		plotvars = [ tvar ]
 		if forecast is not None:
-			fvar: xa.DataArray = normalize(forecast,vname,norms)
+			fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
 			diff: xa.DataArray = tvar - fvar
 		#	rmserror: xa.DataArray = rmse(diff)
 			plotvars = plotvars + [ fvar, diff ]
