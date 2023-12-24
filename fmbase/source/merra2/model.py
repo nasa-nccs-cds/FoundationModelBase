@@ -66,6 +66,8 @@ class FMBatch:
 	def load_merra2_norm_data(self) -> Dict[str, xa.Dataset]:
 		predef_norm_data: Dict[str, xa.Dataset] = self.get_predef_norm_data()
 		m2_norm_data: Dict[str, xa.Dataset] = self.load_norm_data()
+		print( f"predef_norm_data: {list(predef_norm_data.keys())}")
+		print( f"m2_norm_data: {list(m2_norm_data.keys())}")
 		return {nnorm: xa.merge([predef_norm_data[nnorm], m2_norm_data[nnorm]]) for nnorm in m2_norm_data.keys()}
 
 	def load_stats(self, statname: str, **kwargs) -> xa.Dataset:
