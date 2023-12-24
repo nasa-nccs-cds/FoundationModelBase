@@ -75,9 +75,9 @@ class FMBatch:
 		return self.rename_vars( varstats )
 
 	def load_norm_data(self) -> Dict[str, xa.Dataset]:
-		sndef = StatsAccumulator.statnames
+		sndef = { sn:sn for sn in StatsAccumulator.statnames }
 		snames: Dict[str, str] = self.task_config.get('statnames',sndef)
-		return {} if snames is None else {snames[sname]: self.load_stats(sname) for sname in sndef}
+		return {} if snames is None else {snames[sname]: self.load_stats(sname) for sname in sndef.keys()}
 
 	def merge_batch( self, slices: List[xa.Dataset], constants: xa.Dataset ) -> xa.Dataset:
 		constant_vars: List[str] = self.task_config.get('constants',[])
