@@ -73,7 +73,7 @@ def print_data_column( target: xa.Dataset, vname: str, **kwargs):
 	ttest_array: xa.DataArray = target.data_vars[vname]
 	iargs = dict( lon=kwargs.get('lon',100), lat=kwargs.get('lat',100), time=kwargs.get('time',0))
 	tdata = ttest_array.isel(**iargs).squeeze().values.tolist()
-	print(f" ** {ptype} data column=> {vname}: {format_float_list(tdata)}")
+	print(f" ** {ptype} data column=> {vname}{ttest_array.dims}{ttest_array.shape}: {format_float_list(tdata)}")
 
 def is_float( string: str ) -> bool:
 	try: float(string); return True
