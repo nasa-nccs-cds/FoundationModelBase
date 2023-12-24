@@ -65,6 +65,16 @@ def get_obs_species() -> List[str]:
 def obs_dates_for_cov_date( covdate: np.datetime64 ) -> List[np.datetime64]:
     return [ covdate ]
 
+def format_float_list(lst: List[float]) -> List[str]:
+	return [ f"x:.2f" for x in lst ]
+
+def print_data_column( target: xa.Dataset, vname: str, **kwargs):
+	ptype = kwargs.get("type", "")
+	ttest_array: xa.DataArray = target.data_vars[vname]
+	iargs = dict( lon=kwargs.get('lon',100), lat=kwargs.get('lat',100), time=kwargs.get('time',0))
+	tdata = ttest_array.isel(**iargs).squeeze().values.tolist()
+	print(f" ** {ptype} data column=> {vname}: {format_float_list(tdata)}")
+
 def is_float( string: str ) -> bool:
     try: float(string); return True
     except ValueError:  return False

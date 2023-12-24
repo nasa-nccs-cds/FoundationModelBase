@@ -1,13 +1,8 @@
-import hvplot.xarray  # noqa
 import numpy as np
 import xarray as xa
 from typing  import List, Tuple, Union, Optional, Dict
-from fmbase.util.ops import xaformat_timedeltas
+from fmbase.util.ops import xaformat_timedeltas, print_data_column
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-import panel as pn
 import ipywidgets as ipw
 from fmbase.util.logging import lgm, exception_handled, log_timing
 
@@ -47,6 +42,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	ncols =  len( ptypes )
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
+	print_data_column( target, vnames[0], **kwargs )
 
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
