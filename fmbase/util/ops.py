@@ -4,6 +4,8 @@ from omegaconf import DictConfig, OmegaConf
 from typing import Any, Dict, List, Tuple, Type, Optional, Union
 from .config import cfg
 import xarray as xa
+import numpy as np
+from collections.abc import Iterable
 
 def nnan(varray: xa.DataArray) -> int: return np.count_nonzero(np.isnan(varray.values))
 def pctnan(varray: xa.DataArray) -> str: return f"{nnan(varray)*100.0/varray.size:.2f}%"
@@ -152,3 +154,12 @@ def resolve_links( pdict: DictConfig, pkey: str ) -> str:
 
 def fmbdir( dtype: str ) -> str:
 	return resolve_links( cfg().platform, dtype )
+
+def print_norms( norms: Dict[str, xa.Dataset] ):
+	print(f"\n ----------------------------------------- Norm Data ----------------------------------------- ")
+	for norm in norms.keys():
+		print(f" >> Norm {norm}:")
+		for k, ndata in norms[norm].data_vars.items():
+			nval = ndata.values.tolist()
+			if isinstance(nval, Iterable):  print(f" >>>> {k}: {[f'{v:.2f}' for v in nval]}")
+			else:                           print(f" >>>> {k}: {nval}")

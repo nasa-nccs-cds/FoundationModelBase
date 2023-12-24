@@ -26,7 +26,8 @@ def cscale( pvar: xa.DataArray, stretch: float = 2.0 ) -> Tuple[float,float]:
 	return vmin, vmax
 
 def normalize( target: xa.Dataset, vname: str, norms: Dict[str,xa.Dataset] ) -> xa.DataArray:
-	fvar: xa.DataArray = target.data_vars[vname].squeeze(dim="batch", drop=True)
+	fvar: xa.DataArray = target.data_vars[vname]
+	if 'batch' in fvar.dims:  fvar = fvar.squeeze(dim="batch", drop=True)
 	if len(norms) == 0: return fvar
 	stats: Dict[str,xa.DataArray] = { stat: statdata.data_vars[vname] for stat,statdata in norms.items()}
 	return (fvar - stats['mean'])/stats['std']
