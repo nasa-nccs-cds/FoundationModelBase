@@ -61,7 +61,7 @@ class FMBatch:
 		dstd = dict(year_progress=0.0247, year_progress_sin=0.003, year_progress_cos=0.003, day_progress=0.433, day_progress_sin=1.0, day_progress_cos=1.0)
 		vmean = dict(year_progress=0.5, year_progress_sin=0.0, year_progress_cos=0.0, day_progress=0.5, day_progress_sin=0.0, day_progress_cos=0.0)
 		vstd = dict(year_progress=0.29, year_progress_sin=0.707, year_progress_cos=0.707, day_progress=0.29, day_progress_sin=0.707, day_progress_cos=0.707)
-		return dict(diffs_stddev_by_level=d2xa(dstd), mean_by_level=d2xa(vmean), stddev_by_level=d2xa(vstd))
+		return dict(std_diff=d2xa(dstd), mean=d2xa(vmean), std=d2xa(vstd))
 
 	def load_merra2_norm_data(self) -> Dict[str, xa.Dataset]:
 		predef_norm_data: Dict[str, xa.Dataset] = self.get_predef_norm_data()
