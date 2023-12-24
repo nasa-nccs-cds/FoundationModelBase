@@ -66,7 +66,7 @@ def obs_dates_for_cov_date( covdate: np.datetime64 ) -> List[np.datetime64]:
 	return [ covdate ]
 
 def format_float_list(nval: List[float]) -> List[str]:
-	return [ f"x:.2f" for x in nval ] if isinstance(nval, Iterable) else  [ str(nval) ]
+	return [ f"{x:.2f}" for x in nval ] if isinstance(nval, Iterable) else  [ str(nval) ]
 
 def print_data_column( target: xa.Dataset, vname: str, **kwargs):
 	ptype = kwargs.get("type", "")
