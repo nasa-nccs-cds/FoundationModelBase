@@ -38,7 +38,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	target.assign_coords( time=time )
 	if forecast is not None:
 		forecast.assign_coords(time=time)
-		ptypes = ['target', 'forecast', 'difference']
+		ptypes = ['target', 'forecast', 'difference', 'error']
 	ncols =  len( ptypes )
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
@@ -54,17 +54,20 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 		if forecast is not None:
 			fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
 			diff: xa.DataArray = tvar - fvar
-		#	rmserror: xa.DataArray = rmse(diff)
-			plotvars = plotvars + [ fvar, diff ]
+			rmserror: xa.DataArray = rmse(diff)
+			plotvars = plotvars + [ fvar, diff, rmserror ]
 		vrange = None
 		for it, pvar in enumerate( plotvars ):
 			ax = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 			ax.set_aspect(0.5)
-			if it != 1: vrange = cscale( pvar, 2.0 )
-			tslice: xa.DataArray = pvar.isel(time=tslider.value)
-			if "level" in tslice.dims:
-				tslice = tslice.isel(level=lslider.value)
-			ims[(iv,it)] =  tslice.plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True, vmin=vrange[0], vmax=vrange[1]  )
+			if pvar.ndim < 3:
+				ims[(iv, it)] = pvar.plot( ax=ax )
+			else:
+				if it != 1: vrange = cscale( pvar, 2.0 )
+				tslice: xa.DataArray = pvar.isel(time=tslider.value)
+				if "level" in tslice.dims:
+					tslice = tslice.isel(level=lslider.value)
+				ims[(iv,it)] =  tslice.plot.imshow( ax=ax, x="lon", y="lat", cmap='jet', yincrease=True, vmin=vrange[0], vmax=vrange[1]  )
 			pvars[(iv,it)] =  pvar
 			ax.set_title(f"{vname} {ptypes[it]}")
 
@@ -76,10 +79,11 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 			for it1 in range(ncols):
 				ax1 = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
-				im1.set_data( tslice1.values )
-				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				lgm().log(f" >> Time-update {vname1} {ptypes[it1]}: level={lslider.value}, time={sindex}, shape={tslice1.shape}")
+				if "level" in dvar1.dims:
+					tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
+					im1.set_data( tslice1.values )
+					ax1.set_title(f"{vname1} {ptypes[it1]}")
+					lgm().log(f" >> Time-update {vname1} {ptypes[it1]}: level={lslider.value}, time={sindex}, shape={tslice1.shape}")
 		fig.canvas.draw_idle()
 
 	@exception_handled
@@ -90,10 +94,11 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 			for it1 in range(ncols):
 				ax1 = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
-				im1.set_data( tslice1.values )
-				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tslider.value}, mean={tslice1.values.mean():.4f}, std={tslice1.values.std():.4f}")
+				if "level" in dvar1.dims:
+					tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
+					im1.set_data( tslice1.values )
+					ax1.set_title(f"{vname1} {ptypes[it1]}")
+					lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tslider.value}, mean={tslice1.values.mean():.4f}, std={tslice1.values.std():.4f}")
 		fig.canvas.draw_idle()
 
 	tslider.observe( time_update,  names='value' )

@@ -75,7 +75,7 @@ class LogManager(object):
         self._lid = "" if overwrite else f"-{os.getpid()}"
         self.log_file = f'{self.log_dir}/{cfg().cid}{self._lid}.log'
         self._log_stream = open(self.log_file, 'w')
-        print( f"Opening log file:  '{self.log_file}'" )
+        print( f"\n  --------- Opening log file:  '{self.log_file}' ---------  \n" )
 
     @property
     def ctime(self):
