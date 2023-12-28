@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import ipywidgets as ipw
 from fmbase.util.logging import lgm, exception_handled, log_timing
 
+colors = ["red", "blue", "green", "cyan", "magenta", "yellow", "grey", "brown", "pink", "purple", "orange", "black"]
+
 def rms( dvar: xa.DataArray, **kwargs ) -> float:
 	varray: np.ndarray = dvar.isel( **kwargs, missing_dims="ignore", drop=True ).values
 	return np.sqrt( np.mean( np.square( varray ) ) )
@@ -102,12 +104,11 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 
 @exception_handled
 def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
-	colors = [ "red", "blue", "green", "cyan", "magenta", "yellow", "grey", "brown", "pink", "purple", "orange", "black"]
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	target.assign_coords( time=time )
 	forecast.assign_coords(time=time)
 	with plt.ioff():
-		fig, ax = plt.subplots(nrows=1, ncols=1,  figsize=[ 5, 8 ], layout="tight")
+		fig, ax = plt.subplots(nrows=1, ncols=1,  figsize=[ 9, 6 ], layout="tight")
 
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
@@ -115,6 +116,6 @@ def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], 
 		error: xa.DataArray = rmse(tvar-fvar)
 		error.plot.line( ax=ax, color=colors[iv], label=vname )
 
-	ax.set_title(f" Forecast Error ")
+	ax.set_title(f"  Forecast Error  ")
 	ax.legend()
 	return fig.canvas
