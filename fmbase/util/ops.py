@@ -138,13 +138,14 @@ def format_timedelta( td: np.timedelta64, form: str ) -> str:
 		minutes, seconds = divmod(remainder, 60)
 		return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
 	elif form == "hr":
-		return f'{hours}hr'
+		return f'{hours}'
 	elif form == "day":
-		return f'{hours/24}d'
+		return f'{hours/24}'
 	else: raise Exception( f"format_timedelta: unknown form: {form}" )
 
 def xaformat_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> xa.DataArray:
 	return xa.DataArray( [format_timedelta(td,form) for td in tds.values] )
+
 def format_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> str:
 	if tds is None: return " NA "
 	return str( xaformat_timedeltas(tds).values.tolist() ).replace('"','')

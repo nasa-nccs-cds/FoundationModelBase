@@ -1,4 +1,4 @@
-import numpy as np
+import math, numpy as np
 import xarray as xa
 from typing  import List, Tuple, Union, Optional, Dict
 from fmbase.util.ops import xaformat_timedeltas, print_data_column
@@ -104,6 +104,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 @exception_handled
 def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
 	ftime: np.ndarray = xaformat_timedeltas( target.coords['time'], "day" ).values
+	tvals = list( range( math.floor(float(ftime[-1])) ) )
 	with plt.ioff():
 		fig, ax = plt.subplots(nrows=1, ncols=1,  figsize=[ 9, 6 ], layout="tight")
 
@@ -111,7 +112,7 @@ def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], 
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
 		fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
 		error: xa.DataArray = rmse(tvar-fvar).assign_coords(time=ftime).rename( time = "time (days)")
-		error.plot.line( ax=ax, color=colors[iv], label=vname )
+		error.plot.line( ax=ax, color=colors[iv], label=vname, xticks=tvals )
 
 	ax.set_title(f"  Forecast Error  ")
 	ax.legend()
