@@ -2,6 +2,7 @@ import math, numpy as np
 import xarray as xa
 from typing  import List, Tuple, Union, Optional, Dict
 from fmbase.util.ops import xaformat_timedeltas, print_data_column
+import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
 import ipywidgets as ipw
 from fmbase.util.logging import lgm, exception_handled, log_timing
@@ -104,7 +105,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 @exception_handled
 def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
 	ftime: np.ndarray = xaformat_timedeltas( target.coords['time'], "day" ).values
-	tvals = list( range( math.floor(float(ftime[-1])) ) )
+	tvals = list( range( 1, round(float(ftime[-1]))+1 ) )
 	print( f" ftime = {ftime.tolist()} days")
 	print( f" tvals = {tvals} days")
 	with plt.ioff():
@@ -114,8 +115,9 @@ def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str], 
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
 		fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
 		error: xa.DataArray = rmse(tvar-fvar).assign_coords(time=ftime).rename( time = "time (days)")
-		error.plot.line( ax=ax, color=colors[iv], label=vname, xticks=tvals )
+		error.plot.line( ax=ax, color=colors[iv], label=vname )
 
 	ax.set_title(f"  Forecast Error  ")
+	ax.xaxis.set_major_locator(ticker.FixedLocator(tvals))
 	ax.legend()
 	return fig.canvas
