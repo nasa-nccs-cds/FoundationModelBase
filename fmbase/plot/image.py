@@ -101,19 +101,16 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	lslider.observe( level_update, names='value' )
 	return ipw.VBox([tslider, lslider, fig.canvas])
 
-
 @exception_handled
 def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
-	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
-	target.assign_coords( time=time )
-	forecast.assign_coords(time=time)
+	ftime: xa.DataArray = xaformat_timedeltas( target.coords['time'], "day" )
 	with plt.ioff():
 		fig, ax = plt.subplots(nrows=1, ncols=1,  figsize=[ 9, 6 ], layout="tight")
 
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
 		fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
-		error: xa.DataArray = rmse(tvar-fvar)
+		error: xa.DataArray = rmse(tvar-fvar).assign_coords(time=ftime).rename( time = "time (days)")
 		error.plot.line( ax=ax, color=colors[iv], label=vname )
 
 	ax.set_title(f"  Forecast Error  ")
