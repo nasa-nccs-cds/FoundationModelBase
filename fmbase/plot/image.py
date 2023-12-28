@@ -102,19 +102,19 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 
 @exception_handled
 def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
-	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
+	colors = [ "red", "blue", "green", "cyan", "magenta", "yellow", "grey", "brown", "pink", "purple", "orange", "black"]
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	target.assign_coords( time=time )
 	forecast.assign_coords(time=time)
 	with plt.ioff():
-		fig, axs = plt.subplots(nrows=nvars, ncols=1, sharex=True, sharey=True, figsize=[ 5, nvars*3 ], layout="tight")
+		fig, ax = plt.subplots(nrows=1, ncols=1,  figsize=[ 5, 8 ], layout="tight")
 
 	for iv, vname in enumerate(vnames):
-		ax = axs[iv]
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
 		fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
 		error: xa.DataArray = rmse(tvar-fvar)
-		error.plot.line( ax=ax, color="blue", label=vname )
-		# ax.set_title(f"{vname} Forecast Error")
+		error.plot.line( ax=ax, color=colors[iv], label=vname )
 
+	ax.set_title(f" Forecast Error ")
+	ax.legend()
 	return fig.canvas
