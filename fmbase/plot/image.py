@@ -105,6 +105,8 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
 	ftime: np.ndarray = xaformat_timedeltas( target.coords['time'], "day" ).values
 	tvals = list( range( math.floor(float(ftime[-1])) ) )
+	print( f" ftime = {ftime.tolist()} days")
+	print( f" tvals = {tvals} days")
 	with plt.ioff():
 		fig, ax = plt.subplots(nrows=1, ncols=1,  figsize=[ 9, 6 ], layout="tight")
 
