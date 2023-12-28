@@ -43,18 +43,17 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	lslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=levels.size-1, description='Level Index:', )
 	tslider: ipw.IntSlider = ipw.IntSlider( value=0, min=0, max=time.size-1, description='Time Index:', )
 	print_data_column( target, vnames[0], **kwargs )
+	errors: Dict[str,xa.DataArray] = {}
 
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
-		if "batch" in tvar.dims:
-			tvar = tvar.squeeze(dim="batch", drop=True)
 		plotvars = [ tvar ]
 		if forecast is not None:
 			fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
 			diff: xa.DataArray = tvar - fvar
-		#	rmserror: xa.DataArray = rmse(diff)
+			errors[vname] = rmse(diff)
 			plotvars = plotvars + [ fvar, diff ]
 		vrange = None
 		for it, pvar in enumerate( plotvars ):
@@ -99,3 +98,23 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	tslider.observe( time_update,  names='value' )
 	lslider.observe( level_update, names='value' )
 	return ipw.VBox([tslider, lslider, fig.canvas])
+
+
+@exception_handled
+def mplplot_error( target: xa.Dataset, forecast: xa.Dataset, vnames: List[str],  **kwargs ):
+	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
+	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
+	target.assign_coords( time=time )
+	forecast.assign_coords(time=time)
+	with plt.ioff():
+		fig, axs = plt.subplots(nrows=nvars, ncols=1, sharex=True, sharey=True, figsize=[ 5, nvars*3 ], layout="tight")
+
+	for iv, vname in enumerate(vnames):
+		ax = axs[iv]
+		tvar: xa.DataArray = normalize(target,vname,**kwargs)
+		fvar: xa.DataArray = normalize(forecast,vname,**kwargs)
+		error: xa.DataArray = rmse(tvar-fvar)
+		error.plot.line( ax=ax, color="blue", label=vname )
+		# ax.set_title(f"{vname} Forecast Error")
+
+	return fig.canvas
