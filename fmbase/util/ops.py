@@ -131,24 +131,24 @@ def replace_nans(level_array: xa.DataArray) -> xa.DataArray:
 			level_array = level_array.interpolate_na(dim='y', method="linear", fill_value="extrapolate")
 		assert nnan(level_array) == 0, "NaNs remaining after replace_nans()"
 	return level_array
-def format_timedelta( td: np.timedelta64, form: str ) -> str:
+def format_timedelta( td: np.timedelta64, form: str, strf: bool = True ) -> Union[str, float,int]:
 	s = td.astype('timedelta64[s]').astype(np.int32)
 	hours, remainder = divmod(s, 3600)
 	if form == "full":
 		minutes, seconds = divmod(remainder, 60)
 		return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
 	elif form == "hr":
-		return f'{hours}'
+		return f'{hours}' if strf else hours
 	elif form == "day":
-		return f'{hours/24}'
+		return f'{hours/24}' if strf else hours/24
 	else: raise Exception( f"format_timedelta: unknown form: {form}" )
 
-def xaformat_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> xa.DataArray:
-	return xa.DataArray( [format_timedelta(td,form) for td in tds.values] )
+def xaformat_timedeltas( tds: xa.DataArray, form: str = "hr", strf: bool = True ) -> xa.DataArray:
+	return xa.DataArray( [format_timedelta(td,form,strf) for td in tds.values] )
 
-def format_timedeltas( tds: xa.DataArray, form: str = "hr" ) -> str:
+def format_timedeltas( tds: xa.DataArray, form: str = "hr", strf: bool = True ) -> str:
 	if tds is None: return " NA "
-	return str( xaformat_timedeltas(tds).values.tolist() ).replace('"','')
+	return str( xaformat_timedeltas(tds,form,strf).values.tolist() ).replace('"','')
 
 def print_dict( title: str, data: Dict ):
 	print( f"\n -----> {title}:")
