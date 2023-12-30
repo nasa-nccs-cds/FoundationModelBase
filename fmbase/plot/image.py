@@ -38,6 +38,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	forecast: Optional[xa.Dataset] = kwargs.pop('forecast',None)
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
+	lunits : str = levels.attrs.get('units','')
 	target.assign_coords( time=time )
 	if forecast is not None:
 		forecast.assign_coords(time=time)
@@ -73,29 +74,33 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	@exception_handled
 	def time_update(change):
 		sindex = change['new']
-		lgm().log( f"time_update: tindex={sindex}, lindex={lslider.value}")
+		lindex = lslider.value
+		fig.suptitle(f'Forecast day {sindex/4:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12)
+		lgm().log( f"time_update: tindex={sindex}, lindex={lindex}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
 				ax1 = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				tslice1: xa.DataArray =  dvar1.isel( level=lslider.value, time=sindex, drop=True, missing_dims="ignore")
+				tslice1: xa.DataArray =  dvar1.isel( level=lindex, time=sindex, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				lgm().log(f" >> Time-update {vname1} {ptypes[it1]}: level={lslider.value}, time={sindex}, shape={tslice1.shape}")
+				lgm().log(f" >> Time-update {vname1} {ptypes[it1]}: level={lindex}, time={sindex}, shape={tslice1.shape}")
 		fig.canvas.draw_idle()
 
 	@exception_handled
 	def level_update(change):
 		lindex = change['new']
+		tindex = tslider.value
+		fig.suptitle(f'Forecast day {tindex / 4:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12)
 		lgm().log( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
 				ax1 = axs[ iv ] if ncols == 1 else axs[ iv, it ]
 				im1, dvar1 = ims[ (iv1, it1) ], pvars[ (iv1, it1) ]
-				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tslider.value, drop=True, missing_dims="ignore")
+				tslice1: xa.DataArray =  dvar1.isel( level=lindex,time=tindex, drop=True, missing_dims="ignore")
 				im1.set_data( tslice1.values )
 				ax1.set_title(f"{vname1} {ptypes[it1]}")
-				lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tslider.value}, mean={tslice1.values.mean():.4f}, std={tslice1.values.std():.4f}")
+				lgm().log(f" >> Level-update {vname1} {ptypes[it1]}: level={lindex}, time={tindex}, mean={tslice1.values.mean():.4f}, std={tslice1.values.std():.4f}")
 		fig.canvas.draw_idle()
 
 	tslider.observe( time_update,  names='value' )
