@@ -33,12 +33,13 @@ def normalize( target: xa.Dataset, vname: str, **kwargs ) -> xa.DataArray:
 	return (fvar-stats[ statnames['mean'] ]) / stats[ statnames['std'] ]
 
 @exception_handled
-def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
+def mplplot( target: xa.Dataset, vnames: List[str],  task_spec: Dict, **kwargs ):
 	ims, pvars, nvars, ptypes = {}, {}, len(vnames), ['']
 	forecast: Optional[xa.Dataset] = kwargs.pop('forecast',None)
 	time: xa.DataArray = xaformat_timedeltas( target.coords['time'] )
 	levels: xa.DataArray = target.coords['level']
 	lunits : str = levels.attrs.get('units','')
+	dayf = 24/task_spec['data_timestep']
 	target.assign_coords( time=time )
 	if forecast is not None:
 		forecast.assign_coords(time=time)
@@ -75,7 +76,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	def time_update(change):
 		sindex = change['new']
 		lindex = lslider.value
-		fig.suptitle(f'Forecast day {sindex/4:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12)
+		fig.suptitle(f'Forecast day {sindex/dayf:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12)
 		lgm().log( f"time_update: tindex={sindex}, lindex={lindex}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
@@ -91,7 +92,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  **kwargs ):
 	def level_update(change):
 		lindex = change['new']
 		tindex = tslider.value
-		fig.suptitle(f'Forecast day {tindex / 4:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12)
+		fig.suptitle(f'Forecast day {tindex/dayf:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12)
 		lgm().log( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
