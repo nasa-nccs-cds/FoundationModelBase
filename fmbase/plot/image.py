@@ -52,6 +52,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  task_spec: Dict, **kwargs )
 
 	with plt.ioff():
 		fig, axs = plt.subplots(nrows=nvars, ncols=ncols, sharex=True, sharey=True, figsize=[ncols*5, nvars*3], layout="tight")
+		fig.suptitle(f'Forecast day 0, Level: {levels.values[0]:.1f} {lunits}', fontsize=12, va="top" )
 	for iv, vname in enumerate(vnames):
 		tvar: xa.DataArray = normalize(target,vname,**kwargs)
 		plotvars = [ tvar ]
