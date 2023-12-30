@@ -77,7 +77,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  task_spec: Dict, **kwargs )
 	def time_update(change):
 		sindex = change['new']
 		lindex = lslider.value
-		fig.suptitle(f'Forecast day {sindex/dayf:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12, va="top", y=0.0)
+		fig.suptitle(f'Forecast day {sindex/dayf:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=10, va="top", y=1.0)
 		lgm().log( f"time_update: tindex={sindex}, lindex={lindex}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
@@ -93,7 +93,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  task_spec: Dict, **kwargs )
 	def level_update(change):
 		lindex = change['new']
 		tindex = tslider.value
-		fig.suptitle(f'Forecast day {tindex/dayf:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=12, va="top", y=0.0)
+		fig.suptitle(f'Forecast day {tindex/dayf:.1f}, Level: {levels.values[lindex]:.1f} {lunits}', fontsize=10, va="top", y=1.0)
 		lgm().log( f"level_update: lindex={lindex}, tindex={tslider.value}")
 		for iv1, vname1 in enumerate(vnames):
 			for it1 in range(ncols):
@@ -107,7 +107,7 @@ def mplplot( target: xa.Dataset, vnames: List[str],  task_spec: Dict, **kwargs )
 
 	tslider.observe( time_update,  names='value' )
 	lslider.observe( level_update, names='value' )
-	fig.suptitle(f' ** Forecast day 0, Level: {levels.values[0]:.1f} {lunits}', fontsize=12, va="top", y=0.0 )
+	fig.suptitle(f' ** Forecast day 0, Level: {levels.values[0]:.1f} {lunits}', fontsize=10, va="top", y=1.0 )
 	return ipw.VBox([tslider, lslider, fig.canvas])
 
 @exception_handled
